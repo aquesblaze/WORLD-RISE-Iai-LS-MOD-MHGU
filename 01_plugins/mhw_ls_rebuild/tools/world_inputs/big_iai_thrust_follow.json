@@ -1,0 +1,44 @@
+[
+  {
+    "keys": [
+      "mouse_right"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 0.65
+  },
+  {
+    "keys": [
+      "mouse_middle",
+      "space"
+    ],
+    "seconds": 0.2
+  },
+  {
+    "keys": [],
+    "seconds": 1.3
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 0.8
+  },
+  {
+    "keys": [
+      "mouse_middle",
+      "mouse_left"
+    ],
+    "seconds": 0.2
+  },
+  {
+    "keys": [],
+    "seconds": 3.0
+  }
+]

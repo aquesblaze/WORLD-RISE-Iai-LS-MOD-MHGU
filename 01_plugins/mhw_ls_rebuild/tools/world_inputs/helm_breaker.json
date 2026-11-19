@@ -1,0 +1,12 @@
+[
+ {"keys":["w"],"seconds":0.25},
+ {"keys":["mouse_middle","mouse_left"],"seconds":0.20},
+ {"keys":[],"seconds":0.60},
+ {"keys":[],"seconds":0.60},
+ {"keys":[],"seconds":0.60},
+ {"keys":["mouse_left"],"seconds":0.12},
+ {"keys":[],"seconds":0.65},
+ {"keys":[],"seconds":0.65},
+ {"keys":[],"seconds":0.65},
+ {"keys":[],"seconds":0.65}
+]

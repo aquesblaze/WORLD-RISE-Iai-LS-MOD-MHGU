@@ -1,0 +1,91 @@
+#pragma once
+#include "moveset.h"
+#include "world_events.h"
+#include "world_inputs.h"
+#include "world_controls.h"
+
+enum { W_NONE,W_FORESIGHT,W_THRUST,W_RISE,W_AIR,W_DOWN,W_LAND,W_SHEATHE,W_SMALL,W_BIG,W_SHEATHE_END,W_GROUND };
+enum { W_KEEP,W_ENTER,W_NATIVE,W_IDLE,W_ROLL,W_ABORT,W_NATIVE_R,W_MOTION };
+typedef struct {
+    unsigned actor,epoch,sample,held,waiting,ready;
+    float remaining[3];
+} WKeys;
+void w_keys_tick(WKeys *keys,const MLObservation *o);
+typedef struct {
+    MLObservation base;
+    unsigned state,drawn,alive,grounded,rank,contact,counter,resources_ready;
+    unsigned previous_weapon_action;
+} WObservation;
+typedef struct {
+    unsigned kind,move,source,slot,native_action,heading;
+    int rank_delta,gauge_delta;
+    unsigned gauge_clear,gauge_fill,regen_seconds,gauge_hold;
+    unsigned motion_contract;
+    unsigned native_flags; /* explicit request flags;0 keeps the legacy mapping */
+    float start,blend,speed;
+} WDecision;
+/* Native Long Sword Hunter Art dispatch. Action51 is the art activation that
+ * GU submits with request flags0x40; the action handler owns the animation and
+ * its follow-up stages, so the adapter only has to reproduce that request.
+ * The same handler chains action54 and action62 for the two sweeps. */
+enum { W_ART_SAKURA_SLASH=51, W_ART_SAKURA_SWEEP=54, W_ART_SAKURA_FINISH=62,
+       W_ART_SAKURA_FLAGS=0x40 };
+/* A solo-ZR / solo-B ISS follow-up waits this many frames after the F70 gate
+ * so a slightly late partner button can still complete its chord (ZR+B or
+ * ZR+A) instead of the solo move winning the race. The solo ZR grace is also
+ * measured from its own press, so a ZR pressed after F70 still gets the full
+ * window. */
+enum { W_ISS_CHORD_GRACE=10 };
+/* The Helm landing follow-up uses the same idea: a solo ZR waits this many
+ * frames before it becomes Sakura Slash, so a late B/A can still complete
+ * ZR+B (special sheathe) or ZR+A (Foresight). */
+enum { W_LAND_CHORD_GRACE=10 };
+typedef struct {
+    unsigned actor,epoch,move,source,slot,heading,rank,previous_held,sample;
+    WKeys keys;
+    WControls controls;
+    unsigned input_motion,gu_chord_wait;
+    unsigned air_sheathe_sample,air_sheathe_held;
+    float air_sheathe_buffer;
+    unsigned bound,consumed,queued,queued_mask,queued_source,foresight_gauge;
+    unsigned queued_word,queued_shift,queued_heading;
+    unsigned counter_success,hit_success,rank_paid,follow_ready;
+    unsigned iss_r_held,iss_r_clear,iss_b_held; /* debounce ZR+B vs solo B */
+    unsigned iss_zr_frame; /* frame the solo-ZR follow-up was latched */
+    unsigned land_r_clear; /* samples since ZR was last held; gates the landing follow-up */
+    unsigned land_zr_wait; /* landing solo-ZR chord grace countdown */
+    /* Sakura Slash I follow-up: 0 off, 1 waiting for the native chain,
+     * 2 playing. The native art raises the spirit level; the follow-up turns
+     * that into a one-level cost, paid on the frame the chain starts so the
+     * level drops with the move instead of after it. */
+    unsigned sakura_stage,sakura_rank,sakura_frames,sakura_grace,sakura_paid;
+    /* Set to rank+1 when a landing ZR was refused because the effective
+     * spirit level was not yellow; the adapter logs it once. */
+    unsigned sakura_denied;
+    unsigned helm_cost_pending;
+    unsigned ground_node,main_source,spirit_paid;
+    float entry_start;
+    unsigned turn_seen,turn_sample,turn_origin;
+    int turn_delta;
+    float turn_age,turn_duration,turn_fraction;
+    float queue_until,hold_seconds,last_frame,helm_cost_seconds,solo_age;
+    /* 登龙腾空段：R 松开过一次后才允许“再按 R 直接下劈”。 */
+    unsigned helm_air_armed;
+} WState;
+const WClip *w_clip(unsigned source);
+const WEvent *w_event(unsigned source,float frame);
+enum {W_FLOAT_SPEED,W_FLOAT_TURN,W_FLOAT_CAMERA};
+float w_float(unsigned source,unsigned channel,float frame);
+unsigned w_source(unsigned motion);
+unsigned w_foresight_stage(unsigned source,const WEvent *event);
+unsigned w_action(unsigned move);
+unsigned w_guild_attack(unsigned action);
+unsigned w_guild_source(unsigned state,unsigned action,unsigned motion);
+unsigned w_guild_spirit_opener(unsigned action,unsigned motion,unsigned previous);
+unsigned w_private(unsigned state,unsigned action);
+void w_reset(WState *s);
+WDecision w_step(WState *s,const WObservation *o);
+WDecision w_leave(WState *s);
+void w_input_finish(WState *s,const WObservation *o,WDecision decision);
+unsigned w_rotation(WState *s,const WObservation *o,unsigned *heading);
+int w_root_heading(unsigned source,float frame);

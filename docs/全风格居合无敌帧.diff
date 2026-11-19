@@ -1,0 +1,442 @@
+--- a/01_plugins/mhw_ls_rebuild/c/gu_adapter.c
++++ b/01_plugins/mhw_ls_rebuild/c/gu_adapter.c
+@@ -62,12 +62,18 @@
+          ((raw&0x4000)?ML_B:0)|((raw&0x8000)?ML_Y:0)|((raw&0x800)?ML_ZR:0);
+     pad_valid=1;
+ }
+ void ml_pad_refresh(void){++sample_sequence;ml_pad_read();}
+-static unsigned local_guild(void *a)
++/* Hunting style ids reported by native268818:0 Guild,1 Striker,2 Aerial,
++ * 3 Adept,4 Valor,5 Alchemy. The World controller used to be Guild only; the
++ * move set itself (private actions240..250 plus the appended motion bank) is
++ * style-agnostic, so every style passes here. Out-of-range ids still fail
++ * closed instead of trusting a stale style value. */
++static unsigned local_ls(void *a)
+ {
+     if(!a||word(a,0)!=main_base+VT||!(word(a,0x13cc)&1))return 0;
+-    return ((int (*)(void *))(main_base+0x268818))(a)==0;
++    int style=((int (*)(void *))(main_base+0x268818))(a);
++    return style>=0&&style<=5;
+ }
+ #if ML_ANIMATION_PREVIEW || ML_WORLD_COMBAT
+ #if ML_ATTACHMENT_PREVIEW || ML_WORLD_COMBAT
+ #include "attachment_data.h"
+@@ -162,9 +168,9 @@
+         attachment_native[ix].active=0;
+     }
+     u32 result=original_placement(object,owner,role,flags);
+     void *a=(void *)(uptr)owner;float pose[12];u32 joint,closed;
+-    if((role!=9&&role!=10)||!local_guild(a))return result;
++    if((role!=9&&role!=10)||!local_ls(a))return result;
+     if(role==10&&word(object,0x13cc)==2&&word(object,0x13d4)==2&&word(object,0x1408)&&
+        (u16(a,MOTION)>>8!=5||u16(a,MOTION)<0x5e0)){
+         back_rest.owner=a;back_rest.epoch=byte(a,AREA);back_rest.model=(u32)(uptr)object;
+         for(unsigned i=0;i<12;++i)back_rest.pose[i]=real(object,0x40+4*i);
+@@ -187,9 +193,9 @@
+ }
+ static u32 preview_equipment_motion(void *object,u32 owner,u32 c,u32 d)
+ {
+     void *a=(void *)(uptr)owner;
+-    if(word(object,0x13d0)==9&&local_guild(a)){
++    if(word(object,0x13d0)==9&&local_ls(a)){
+         unsigned motion=u16(a,MOTION);float frame=real(a,FRAME);
+         if((motion>>8)==5&&frame>=0&&frame<10000)
+         for(unsigned i=0;i<sizeof(ml_attachment_clips)/sizeof(*ml_attachment_clips);++i){
+             const MLAttachmentClip *clip=ml_attachment_clips+i;
+@@ -228,9 +234,9 @@
+ #endif
+ static u32 preview_equipment(void *object,u32 b,u32 c,u32 d)
+ {
+     void *a=(void *)(uptr)word(object,0x30);u32 role=word(object,0x13d0);
+-    if((role!=9&&role!=10)||!local_guild(a))return original_equipment(object,b,c,d);
++    if((role!=9&&role!=10)||!local_ls(a))return original_equipment(object,b,c,d);
+     u32 result=original_equipment(object,b,c,d);
+ #if ML_WORLD_COMBAT
+     return result; /* Combat builds do not need per-bone preview telemetry. */
+ #else
+@@ -281,9 +287,9 @@
+ #include "world_adapter.inc"
+ #endif
+ static u32 request_hook(void *a,u32 state,u32 action,u32 flags)
+ {
+-    if(submitting||!local_guild(a))return original_request(a,state,action,flags);
++    if(submitting||!local_ls(a))return original_request(a,state,action,flags);
+     /* Requests can precede the post-poll hook. Refresh bits without adding
+      * another simulation sample or advancing any buffered-key timer. */
+     ml_pad_read();
+ #if ML_WORLD_COMBAT
+@@ -308,9 +314,9 @@
+      * The native thrust handler is used as a playback host, not a combat
+      * implementation. Only use with the matching event-free preview ARC. */
+     static u32 preview_index;
+     static const u32 preview_slots[]={224,225,226,227,228,229,230,238,239,240,241,242,243,244,245};
+-    if(layer==0&&motion!=0xffffu&&local_guild(a)){
++    if(layer==0&&motion!=0xffffu&&local_ls(a)){
+         log_event("preview_layer_input",(u32)(uptr)a,motion,u16(a,ACTION),flags);
+         if(motion==5105u&&u16(a,ACTION)==4){
+             u32 slot=preview_slots[preview_index%15];
+             void *resource=(void *)(uptr)word(a,0xf04+5*4);
+@@ -332,18 +338,18 @@
+         }
+     }
+ #endif
+     uptr result=original_layer(a,layer,motion,flags,blend,start,speed);
+-    if(layer==0&&motion!=0xffffu&&local_guild(a)){
++    if(layer==0&&motion!=0xffffu&&local_ls(a)){
+         if(bind_actor!=a){bind_actor=a;bind_generation=0;}
+         ++bind_generation;
+     }
+     return result;
+ }
+ static u32 update(void *a,u32 b,u32 c,u32 d,NativeCall original)
+ {
+     if(update_depth)return original(a,b,c,d);
+-    if(!local_guild(a)){
++    if(!local_ls(a)){
+         if(controller.actor==(u32)(uptr)a)ml_reset(&controller);
+ #if ML_WORLD_COMBAT
+         if(world.actor==(u32)(uptr)a){
+             world_physics_end(a);world_cleanup(a);world_follow_clear();
+@@ -386,14 +392,14 @@
+     u32 value=original(a,b,c,d);
+ #if ML_WORLD_COMBAT
+     world_loop_heading(a);
+ #endif
+-    if(pending_fade&&local_guild(a)&&u16(a,STATE)==16&&
++    if(pending_fade&&local_ls(a)&&u16(a,STATE)==16&&
+        (u16(a,ACTION)==4||u16(a,ACTION)==8||u16(a,ACTION)==28||u16(a,ACTION)==29)){
+         log_event("pending_heading",(u32)(uptr)a,anchor,u16(a,HEADING),u16(a,ACTION));
+         put(a,HEADING,anchor);put(a,TARGET,anchor);
+     }
+-    if(local_guild(a)){
++    if(local_ls(a)){
+         unsigned before=controller.phase;MLObservation after=observe(a,0);
+         ml_observe(&controller,&after);
+         if(before==ML_WAIT_BIND&&controller.phase==ML_PLAYING)
+             log_event("binding_ack",after.actor,controller.current,after.motion,after.bind_generation);
+--- a/01_plugins/mhw_ls_rebuild/c/world_core.h
++++ b/01_plugins/mhw_ls_rebuild/c/world_core.h
+@@ -39,8 +39,13 @@
+     unsigned turn_seen,turn_sample,turn_origin;
+     int turn_delta;
+     float turn_age,turn_duration,turn_fraction;
+     float queue_until,hold_seconds,last_frame,helm_cost_seconds,solo_age;
++    /* R+B chord -> special sheathe right after an Iai. sheathe_latch keeps one
++     * physical press from re-entering, sheathe_grace survives the end of the
++     * Iai action so a chord pressed during recovery still lands. */
++    float sheathe_grace;
++    unsigned sheathe_latch;
+ } WState;
+ const WClip *w_clip(unsigned source);
+ const WEvent *w_event(unsigned source,float frame);
+ enum {W_FLOAT_SPEED,W_FLOAT_TURN,W_FLOAT_CAMERA};
+--- a/01_plugins/mhw_ls_rebuild/c/world_core.c
++++ b/01_plugins/mhw_ls_rebuild/c/world_core.c
+@@ -257,8 +257,11 @@
+     s->move=move;s->rank=o->rank;s->source=source_for(move,o->rank);
+     s->slot=w_clip(s->source)->slot;s->bound=0;s->last_frame=0;
+     s->counter_success=s->hit_success=s->rank_paid=s->follow_ready=0;
+     s->hold_seconds=0;s->consumed|=mask;s->queued=0;
++    /* Any real entry ends the Iai recovery grace; the latch belongs to the
++     * chord helper so one hold stays one command. */
++    s->sheathe_grace=0;
+     s->ground_node=s->main_source=0;s->entry_start=0;
+     s->turn_seen=0;s->turn_sample=0;s->turn_duration=s->turn_fraction=0;
+     s->heading=o->base.heading;
+     if(o->base.magnitude>=50&&move!=W_SMALL&&move!=W_BIG&&move!=W_THRUST&&
+--- a/01_plugins/mhw_ls_rebuild/c/world_command_driver.inc
++++ b/01_plugins/mhw_ls_rebuild/c/world_command_driver.inc
+@@ -130,8 +130,24 @@
+         }
+         if(!c->buttons[buttons[i]].waiting)s->gu_chord_wait=0;
+     }
+ }
++/* Requested: 居合 (Iai) must chain straight back into 特殊納刀. World's own
++ * ground graph has no special-sheathe edge out of either Iai node (64/65) and
++ * its TIML clips never grant the R+B chord there, so the shared transition can
++ * never fire. Accept a fresh R+B chord at any frame of the private Iai actions,
++ * keep it for a short grace window after the action ends, and let the drawn
++ * idle take it too. The latch stops one hold that already opened the stance
++ * from firing a second command by itself. */
++#define WORLD_IAI_SHEATHE_GRACE .5f
++static unsigned world_sheathe_chord(WState *s,const MLObservation *b)
++{
++    unsigned chord=(b->held&(ML_R|ML_B))==(ML_R|ML_B)&&!(b->held&(ML_X|ML_A|ML_Y));
++    if(!chord){s->sheathe_latch=0;return 0;}
++    if(s->sheathe_latch)return 0;
++    s->sheathe_latch=1;
++    return 1;
++}
+ static WDecision world_command_step(WState *s,const WObservation *o,unsigned source,const WEvent *event)
+ {
+     const MLObservation *b=&o->base;
+     unsigned idle=!s->move&&(o->state==1||o->state==2)&&b->native_action<=5&&o->grounded;
+@@ -149,8 +165,25 @@
+             if(!o->grounded&&b->held==(ML_R|ML_B)&&s->air_sheathe_held!=(ML_R|ML_B))
+                 s->air_sheathe_buffer=.35f;
+         }
+         s->air_sheathe_held=b->held;
++    }
++    /* Forgiving R+B sheathe/Iai loop. Runs before the stock source lookup
++     * because the drawn idle has no World ground source of its own. */
++    if(s->sheathe_grace>0){
++        float dt=b->simulation_delta/60.0f;
++        if(dt>0&&dt<.5f)s->sheathe_grace-=dt;
++        if(s->sheathe_grace<0)s->sheathe_grace=0;
++    }
++    unsigned sheathe=world_sheathe_chord(s,b);
++    if(s->move==W_SMALL||s->move==W_BIG){
++        s->sheathe_grace=WORLD_IAI_SHEATHE_GRACE;
++        if(sheathe)return enter(s,o,W_SHEATHE,ML_R|ML_B);
++    }else if(!s->move&&s->sheathe_grace>0&&sheathe&&o->state==16&&o->drawn&&
++             o->grounded&&o->resources_ready&&b->native_action<=5){
++        /* Chord pressed just after the Iai ended: the drawn idle accepts the
++         * stance directly instead of dropping the input. */
++        return enter(s,o,W_SHEATHE,ML_R|ML_B);
+     }
+     if(!s->move){
+         source=w_guild_source(o->state,b->native_action,b->motion);
+         if(!source||!o->grounded){s->controls=(WControls){0};s->gu_chord_wait=0;return (WDecision){0};}
+@@ -185,9 +218,12 @@
+     }
+     if(s->move==W_SHEATHE){
+         if(event&&event->phase==1&&b->simulation_delta>0&&b->simulation_delta<30)
+             s->hold_seconds+=b->simulation_delta/60;
+-        if(w_controls_query(&s->controls,39,1,0))return enter(s,o,W_BIG,ML_R);
++        /* The chord that opened the stance has already spent R; keeping it
++         * held must not spend the stance on a big Iai by itself. */
++        unsigned fresh=b->held&~s->consumed;
++        if((fresh&ML_R)&&w_controls_query(&s->controls,39,1,0))return enter(s,o,W_BIG,ML_R);
+         if(w_controls_query(&s->controls,25,1,0))return enter(s,o,W_SMALL,ML_X);
+         if(s->hold_seconds>=3.5f)return enter(s,o,W_SHEATHE_END,0);
+         return (WDecision){0};
+     }
+--- a/01_plugins/mhw_ls_rebuild/c/world_adapter.inc
++++ b/01_plugins/mhw_ls_rebuild/c/world_adapter.inc
+@@ -6,9 +6,9 @@
+ static NativeCall world_original_gauge_gain;
+ static u32 world_gauge_gain(void *a,u32 amount,u32 c,u32 d)
+ {
+     int gain=(int)amount;
+-    unsigned own=local_guild(a)&&world.actor==(u32)(uptr)a&&world.epoch==byte(a,AREA)&&
++    unsigned own=local_ls(a)&&world.actor==(u32)(uptr)a&&world.epoch==byte(a,AREA)&&
+         (int16_t)u16(a,HP)>0&&!world.move&&world_normal_gauge_action(u16(a,STATE),u16(a,ACTION));
+     unsigned before=own?word(a,0x2780):0;
+     if(own&&before<100)gain=world_normal_gauge_gain(gain,&world_normal_gauge_tenths);
+     u32 result=world_original_gauge_gain(a,(u32)gain,c,d);
+@@ -77,9 +77,9 @@
+     world_original_spirit_hud(hud);
+     float remaining=world_regen>world_helm_regen?world_regen:world_helm_regen;
+     if(remaining<=0)return;
+     void *a=(void *)(uptr)world.actor;
+-    if(!local_guild(a)||byte(a,AREA)!=world.epoch||(int16_t)u16(a,HP)<=0)return;
++    if(!local_ls(a)||byte(a,AREA)!=world.epoch||(int16_t)u16(a,HP)<=0)return;
+     /* Sampled warm white peak and envelope in the World training recording. */
+     float frame=world_regen_hud_frame;
+     float strength=frame<20?0:frame<25?(frame-20)*0.14f:
+         frame<35?0.7f+(frame-25)*0.03f:frame<55?(55-frame)*0.05f:0;
+@@ -89,9 +89,9 @@
+ }
+ static void (*world_original_timers)(void *);
+ static void world_timers(void *a)
+ {
+-    unsigned own=local_guild(a)&&world.actor==(u32)(uptr)a&&world.epoch==byte(a,AREA)&&
++    unsigned own=local_ls(a)&&world.actor==(u32)(uptr)a&&world.epoch==byte(a,AREA)&&
+         (int16_t)u16(a,HP)>0&&(world_regen>0||world_helm_regen>0);
+     unsigned gauge=word(a,0x2780);float decay=real(a,0x3328);
+     world_original_timers(a);
+     /* Native119eef0 contains passive gauge decay and other independent timers.
+@@ -100,8 +100,12 @@
+ }
+ static int world_hit=-1;
+ static unsigned world_attack_id,world_attack_actor,world_attack_owned,world_contact_seen;
+ static unsigned world_counter_seen;
++/* Requested: Iai (小居合/大居合) invincibility lasts two frames longer. The
++ * authored window is the run of source TIML events whose common bit26 is set;
++ * this is how many 60 Hz frames that window is carried past its last event. */
++#define WORLD_IAI_INVULN_EXTEND 2
+ static void set_real(void *a,u32 at,float x){*(float *)((uptr)a+at)=x;}
+ #include "world_physics.inc"
+ typedef float (__attribute__((pcs("aapcs-vfp"))) *AttackScale)(void *);
+ static AttackScale world_original_attack_scale;
+@@ -145,9 +149,9 @@
+     return value;
+ }
+ static u32 world_damage(void *a)
+ {
+-    if(!local_guild(a)||world.actor!=(u32)(uptr)a||world.epoch!=byte(a,AREA)||
++    if(!local_ls(a)||world.actor!=(u32)(uptr)a||world.epoch!=byte(a,AREA)||
+        (int16_t)u16(a,HP)<=0)return world_original_damage(a);
+     unsigned packet=byte(a,0x31e0),type=byte(a,0x3216);
+     unsigned eligible=packet&&(int16_t)u16(a,0x321c)>=0&&world_counter_type(type);
+     if(packet&&world.move)log_event("world_incoming",(u32)(uptr)a,world.source,(u32)real(a,FRAME),type|(eligible<<16));
+@@ -157,9 +161,22 @@
+         float f=real(a,FRAME);const WEvent *e=w_event(world.source,f);
+         /* Original PlMotionCommon::mFlag bit25 feeds player+8948 bit22.
+          * Read the animation key at contact so recovery loses armor on time. */
+         super=world.move!=W_GROUND&&e&&(e->common&0x02000000u);
+-        unsigned iai=(world.move==W_SMALL||world.move==W_BIG)&&e&&(e->common&0x04000000u);
++        unsigned iai=0;
++        if(world.move==W_SMALL||world.move==W_BIG){
++            /* Authored Iai window, then WORLD_IAI_INVULN_EXTEND frames of the
++             * same invincibility carried past it. Look back at the source
++             * clock so a hit landing right after the window still counts. */
++            iai=e&&(e->common&0x04000000u);
++            unsigned authored=iai;
++            for(unsigned back=1;!iai&&back<=WORLD_IAI_INVULN_EXTEND;++back){
++                const WEvent *p=w_event(world.source,f-(float)back);
++                iai=p&&(p->common&0x04000000u);
++            }
++            if(iai&&!authored)
++                log_event("world_iai_invuln_ext",(u32)(uptr)a,world.source,(u32)f,type);
++        }
+         unsigned foresight=world.move==W_FORESIGHT&&world.foresight_gauge&&f>=0&&f<45;
+         if(iai||foresight){
+             *(unsigned char *)((uptr)a+0x31e0)=0;
+         }
+--- a/01_plugins/mhw_ls_rebuild/c/world_camera.inc
++++ b/01_plugins/mhw_ls_rebuild/c/world_camera.inc
+@@ -52,9 +52,9 @@
+ }
+ static void world_camera(void *camera)
+ {
+     void *a=(void *)(uptr)word(camera,0x85c);
+-    unsigned valid=local_guild(a)&&world_camera_actor==(u32)(uptr)a&&
++    unsigned valid=local_ls(a)&&world_camera_actor==(u32)(uptr)a&&
+         world_camera_epoch==byte(a,AREA)&&(int16_t)u16(a,HP)>0;
+     if(!valid)world_camera_active=0;
+     else {
+         if(world_camera_object!=(u32)(uptr)camera){
+--- a/01_plugins/mhw_ls_rebuild/c/world_detector.inc
++++ b/01_plugins/mhw_ls_rebuild/c/world_detector.inc
+@@ -57,9 +57,9 @@
+     return !(type>=25&&type<=29)&&type!=58&&type!=67&&type!=68&&type!=70;
+ }
+ static void world_detect_attack(void *manager,void *attack,void *a)
+ {
+-    if(a==(void *)(uptr)world.actor&&local_guild(a)&&world.epoch==byte(a,AREA)&&
++    if(a==(void *)(uptr)world.actor&&local_ls(a)&&world.epoch==byte(a,AREA)&&
+        (int16_t)u16(a,HP)>0&&!world_counter_seen&&world.move&&world_bound&&
+        u16(a,MOTION)==0x500+world.slot&&world_counter_type(byte(attack,0x3a))&&
+        /* Native16938c identifies monster ownership through either collider
+         * owner kind10 or originating owner kind6e (monster projectiles). */
+--- a/01_plugins/mhw_ls_rebuild/c/world_physics.inc
++++ b/01_plugins/mhw_ls_rebuild/c/world_physics.inc
+@@ -88,9 +88,9 @@
+     }
+ }
+ static u32 world_floor(void *a,u32 b,u32 c,u32 d)
+ {
+-    unsigned owned=local_guild(a)&&world.actor==(u32)(uptr)a&&world.move&&
++    unsigned owned=local_ls(a)&&world.actor==(u32)(uptr)a&&world.move&&
+         world.epoch==byte(a,AREA)&&(world_air_owner(a)||world.move==W_FORESIGHT);
+     if(!owned)return world_original_floor(a,b,c,d);
+     world_physics_tick(a);++world_floor_depth;
+     u32 result=world_original_floor(a,b,c,d);
+--- a/01_plugins/mhw_ls_rebuild/build.rs
++++ b/01_plugins/mhw_ls_rebuild/build.rs
+@@ -1,9 +1,12 @@
+ use std::{env,path::PathBuf,process::Command};
+ fn main(){
+     let dir=env::var("CARGO_MANIFEST_DIR").unwrap();
+     let out=PathBuf::from(env::var("OUT_DIR").unwrap());
+-    let gcc=r"D:\tools\arm-none-eabi-gcc\xpack-arm-none-eabi-gcc-15.2.1-1.1\bin\arm-none-eabi-gcc.exe";
++    // ARM_NONE_EABI_GCC points at the cross compiler when it is not installed in
++    // the original xpack location; the literal below is only a convenience default.
++    let gcc=env::var("ARM_NONE_EABI_GCC").unwrap_or_else(|_|
++        r"D:\tools\arm-none-eabi-gcc\xpack-arm-none-eabi-gcc-15.2.1-1.1\bin\arm-none-eabi-gcc.exe".into());
+     let preview=env::var("ML_ANIMATION_PREVIEW").as_deref()==Ok("1");
+     let attachments=env::var("ML_ATTACHMENT_PREVIEW").as_deref()==Ok("1");
+     let combat=env::var("ML_WORLD_COMBAT").as_deref()==Ok("1");
+     let input_vm=env::var("ML_WORLD_INPUT_VM").as_deref()==Ok("1");
+@@ -36,9 +39,9 @@
+     if preview { println!("cargo:rustc-cfg=ml_animation_preview"); }
+     if attachments { println!("cargo:rustc-cfg=ml_attachment_preview"); }
+     for name in ["moveset","world_core","gu_adapter"]{
+         let obj=out.join(format!("{name}.o"));
+-        let status=Command::new(gcc).arg(if preview {"-DML_ANIMATION_PREVIEW=1"} else {"-DML_ANIMATION_PREVIEW=0"})
++        let status=Command::new(&gcc).arg(if preview {"-DML_ANIMATION_PREVIEW=1"} else {"-DML_ANIMATION_PREVIEW=0"})
+             .arg(if attachments {"-DML_ATTACHMENT_PREVIEW=1"} else {"-DML_ATTACHMENT_PREVIEW=0"})
+             .arg(if combat {"-DML_WORLD_COMBAT=1"} else {"-DML_WORLD_COMBAT=0"})
+             .arg(if input_vm {"-DML_WORLD_INPUT_VM=1"} else {"-DML_WORLD_INPUT_VM=0"})
+             .arg(if audio_probe {"-DML_WORLD_AUDIO_PROBE=1"} else {"-DML_WORLD_AUDIO_PROBE=0"})
+--- a/01_plugins/mhw_ls_rebuild/src/lib.rs
++++ b/01_plugins/mhw_ls_rebuild/src/lib.rs
+@@ -31,9 +31,9 @@
+     let installed=unsafe{ml_install(base)};
+     if installed==0 {error!("[ml-rebuild] native guards rejected; controller remains inactive");return;}
+     BASE.store(base,Ordering::Relaxed);
+     forge::install_hook!(base,sample_pad);
+-    info!("[ml-rebuild] installed; Guild only; R/ZR separate; native collision retained");
++    info!("[ml-rebuild] installed; all styles; iai loop; iframe+2; native collision retained");
+ }
+ 
+ #[cfg(ml_world_combat)]
+ static GAUGE_GLOW: AtomicU32 = AtomicU32::new(0);
+--- a/README.md
++++ b/README.md
+@@ -1,9 +1,11 @@
+ # 公会太刀 · 世界招式移植 v1.0.7
+ 
+ **[下载 PC 成品包](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU/releases/download/v1.0.7/MHW-LS-MHGU-PC-v1.0.7.zip)** · [下载模拟器包](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU/releases/download/v1.0.7/MHW-LS-MHGU-Emulator-v1.0.7.zip) · [下载源码包](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU/releases/download/v1.0.7/MHW-LS-MHGU-Source-v1.0.7.zip)
+ 
+-在公会风格太刀上加入《怪物猎人：世界／冰原》的看破斩、特殊纳刀、小居合、大居合、气刃突刺和气刃兜割。PC 主要验证环境为 MHGURecomp 0.16.0；模拟器对应 GU 国际版 v1.4.0、0100770008DD8000 和现有 Forge 加载器。
++在太刀上加入《怪物猎人：世界／冰原》的看破斩、特殊纳刀、小居合、大居合、气刃突刺和气刃兜割。
++
++**本改版（非官方）**：① 去掉「仅公会风格」限制，六种风格均可用；② 居合（小居合/大居合）之后可以直接接特殊纳刀，纳刀↔居合可一直连；③ 居合无敌帧 +2 帧。详见文末「本改版改动」。PC 主要验证环境为 MHGURecomp 0.16.0；模拟器对应 GU 国际版 v1.4.0、0100770008DD8000 和现有 Forge 加载器。
+ 
+ ## v1.0.7 更新（含 v1.0.6 修复）
+ 
+ - 修复转向时 R+B 被侧滚抢先执行：有效窗口内同时按 R+B 或先 R 后 B，优先特殊纳刀。单按 B 仍正常回避；已经由先按 B 启动的回避不会追溯改成纳刀。
+@@ -16,9 +18,9 @@
+ 本轮没有继续扩展折射、光照或粒子移植，也没有新增PC渲染模块。错误的突刺折射代理层已停用，画面仍非《世界》完全还原。
+ 
+ ## 安装与操作
+ 
+-**不要同时安装其他太刀动作、派生或连招修改 MOD。** 升级前关闭游戏，把旧版公会太刀移出 MOD 目录，再安装新版。使用公会风格和太刀。本版没有独立参数菜单。
++**不要同时安装其他太刀动作、派生或连招修改 MOD。** 升级前关闭游戏，把旧版公会太刀移出 MOD 目录，再安装新版。使用太刀（本改版任意风格均可）。本版没有独立参数菜单。
+ 
+ PC：解压 PC 成品包，将 `romfs` 放到游戏目录的 `mods/MHW_WORLD_DEV/` 下，确认 `mods/MHW_WORLD_DEV/romfs/nativeNX/plugins/mhw_ls_rebuild.nro` 存在。
+ 
+ Eden：解压模拟器包，将 `romfs` 放到 `load/0100770008DD8000/MHW_WORLD_DEV/` 下。需要已安装的 Forge 加载器，本包不附带或覆盖加载器。
+@@ -63,4 +65,40 @@
+ 
+ ## 其他实用 MOD
+ 
+ [怪物显隐、无边缘传送、斩味条 HUD](utility_mods/)：五个安装包、三个完整 Rust 工程，以及构建、打包和安装说明。斩味条提供主机、掌机、可调整三个版本。
++
++## 本改版改动（相对官方 v1.0.7 源码）
++
++1. **去掉公会限定**：`c/gu_adapter.c` 的 `local_guild()` 改为 `local_ls()`，接受原生风格编号 0..5
++   （公会/强袭/空战/武士道/勇气/炼金），越界值仍然关闭控制器；17 处调用点同步改名。
++   世界招式本身走私有动作 240..250 + 追加动作库，与风格无关。
++2. **居合后可直接接纳刀居合**：`c/world_command_driver.inc` 新增 `world_sheathe_chord()` 与
++   `WORLD_IAI_SHEATHE_GRACE`，在 `world_command_step()` 里接管：
++   - 小居合 / 大居合**任意一帧**按 R+B → 立刻进特殊纳刀；
++   - 居合结束后 **0.5 秒**内按 R+B，从拔刀待机也能进；
++   - `sheathe_latch` 保证一次按住只触发一次；
++   - 特殊纳刀里的「大居合」需要一次新的 R 按下（`fresh=b->held&~s->consumed`）。
++   原版数据走不通的原因：判定图节点 64/65（小/大居合）没有指向节点 61（特殊纳刀）的边，
++   公共转移被 `node!=0&&node!=64&&node!=65` 排除，且这两段 TIML 里 R+B 权限位所有帧都是 0。
++3. **居合无敌帧 +2 帧**：`c/world_adapter.inc` 的 `world_damage()` 里新增
++   `WORLD_IAI_INVULN_EXTEND = 2`，在源 `common` bit26 的无敌窗口结束后再补 2 帧（60fps ≈ 0.033 秒）。
++   窗口：小居合 ~5→7 帧；大居合（308）12→14 帧；大居合（309-311）14→16 帧。
++   只延后不提前，起手帧不变；延长挡下攻击会打 `world_iai_invuln_ext` 日志。
++4. `WState` 增加 `sheathe_grace` / `sheathe_latch`，`enter()` 进入任何招式时清 `sheathe_grace`。
++5. `build.rs` 支持 `ARM_NONE_EABI_GCC` 环境变量；安装日志
++   `installed; all styles; iai loop; iframe+2; native collision retained`。
++
++编译（本机实测组合）：
++
++```powershell
++rustup toolchain install nightly --component rust-src   # nightly-x86_64-pc-windows-gnu
++cargo install cargo-mhgu-forge                          # 1.5.0
++cd 01_plugins/mhw_ls_rebuild
++$env:ML_WORLD_COMBAT="1"; $env:ML_WORLD_INPUT_VM="1"; $env:ML_WORLD_PRESENTATION="1"
++$env:ARM_NONE_EABI_GCC="<arm-none-eabi-gcc.exe>"
++$env:CARGO_TARGET_ARMV7A_NONE_EABI_LINKER=$env:ARM_NONE_EABI_GCC
++cargo forge build --release
++```
++
++产物 `mhw_ls_rebuild.nro` 479232 字节，SHA256 `c0ebcce202640e5075edb6dbb8dd54f26252733af53e0db38d037bd4b1d7c71a`，段布局（text 0x15000 / ro 0x5f000 / data 0x74000 / bss 0xc000）
++与官方 v1.0.7 一致。

@@ -1,0 +1,201 @@
+CHANGELOG - MHGU Long Sword (World-style rebuild)
+Tanggal: 2026-11-19
+Build terakhir: foresight-win
+
+============================================================
+PERUBAHAN TERBARU (Foresight Slash hanya setelah ISS berhasil)
+============================================================
+
+1. Foresight Slash dari ISS tidak lagi bisa dipakai saat whiff
+   - Sebelumnya ZR+A setelah Iai Spirit Slash (ISS) bisa keluar baik saat
+     counter berhasil maupun gagal.
+   - Sekarang ZR+A hanya diterima bila counter berhasil (counter_success).
+   - ISS yang gagal (whiff) hanya menjalani recovery normal: ZR+A, ZR+B, dan
+     B roll semuanya ditolak, tidak ada gerakan tambahan dan tidak ada biaya.
+   - Aturan ini berlaku sama untuk semua gaya (Guild, Striker, Aerial, Adept,
+     Valor, Alchemy).
+
+2. Konsistensi aturan Rise
+   - Semua follow-up ISS (Special Sheathe, roll, Foresight, Spirit III)
+     sekarang seragam: hanya tersedia setelah counter berhasil.
+   - Input yang ditekan cepat saat counter (F12-F14) tetap di-buffer sampai
+     F70, tetapi hanya dieksekusi bila counter-nya berhasil.
+
+3. Host test
+   - Kasus whiff + ZR+A di F70 sekarang diharapkan W_KEEP (ditolak).
+   - Kasus whiff + ZR+A di F71 (di luar jendela) juga W_KEEP.
+   - Kasus counter berhasil + ZR+A tetap W_ENTER ke W_FORESIGHT.
+   - Dua test lulus:
+     * PASS: Guild ownership, art pass-through, World chord, Iai settled roll,
+       ISS follows, Spirit finish and native return
+     * PASS: source combat, typed interpolation, buffered alternating loop and
+       chord priority
+
+4. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro
+   - Ukuran : 487424 byte
+   - SHA256 : 29f938274fc66d341273b3e8bef2e4d07e9ff6b44c32ee85bab762f0a370ebb1
+   - Baris instalasi yang harus muncul:
+     [ml-rebuild] installed; all styles; iai roll; sheath x1.40; iframe-2;
+     native collision retained; rumble; foresight-win
+
+5. Yang tidak berubah
+   - Follow-up Sakura Slash I, biaya level seketika, dan gate kuning tetap
+     seperti build sebelumnya.
+   - ZR+B kembali ke Special Sheathe dan B roll setelah counter berhasil tetap
+     ada; ZR -> Spirit III -> Spirit Roundslash tetap ada.
+   - Debounce ZR/B 2 frame, iframe 2 frame terakhir, sheath x1.40, ZR fisik =
+     ML_R, dan roll saat mendarat Helm tidak diubah.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Sakura Slash I setelah Helm Breaker)
+============================================================
+
+1. Follow-up Sakura Slash I dari landing Helm Breaker
+   - Setelah 兜割 (Spirit Helm Breaker) mendarat, lepas ZR lalu tekan ZR baru
+     untuk langsung meminta native action 51 (flags 0x40).
+   - Tidak perlu memasang Sakura Slash di slot art, tidak perlu art gauge.
+   - ZR yang masih ditahan dari gerakan dive tidak memicu follow-up.
+   - ZR+A / ZR+B di landing tetap Foresight / Special Sheathe seperti biasa.
+
+2. Biaya 1 level menggantikan kenaikan native
+   - Sakura Slash asli menaikkan level spirit 1 tingkat; di mod ini dibalik
+     menjadi biaya.
+   - Kenaikan native dibatalkan saat rantai animasi berjalan.
+   - Total "Helm Breaker + Sakura" = 2 level (Helm 1 + Sakura 1), sama seperti
+     rangkaian Helm + Spirit Release di MH Wilds.
+
+3. Biaya dibayar seketika (perbaikan delay indikator)
+   - Sebelumnya: level baru turun setelah animasi selesai + 6 frame grace
+     (terasa delay sekitar 1,5 detik).
+   - Sekarang: biaya dibayar pada frame pertama rantai animasi mulai
+     (action 51/54/62 atau motion 0x701..0x703), sekitar 2 frame (~33 ms)
+     setelah tombol ditekan.
+   - Frame akhir animasi tidak lagi memotong level (tidak ada potongan ganda).
+   - Kalau permintaan gerakan diabaikan game (tidak ada rantai dalam 90 frame),
+     tidak ada biaya sama sekali.
+
+4. Syarat level: hanya kuning (gaya MH Wilds)
+   - Sakura Slash I hanya bisa dipakai saat level spirit efektif = kuning (2).
+   - Yang dinilai adalah level setelah biaya 兜割, termasuk saat biaya 兜割
+     masih tertunda 0,5 detik setelah mendarat.
+   - Alur yang diharapkan: merah (3) -> 兜割 -> kuning (2) -> Sakura -> putih (1).
+   - Mulai dari kuning/putih/tanpa warna: tombol ZR ditolak, tidak keluar gerakan
+     dan tidak ada level yang hilang.
+   - Penolakan dicatat di log sebagai "world_sakura_denied".
+
+5. Perbaikan bug biaya yang hilang
+   - Ditemukan dari log pemain: di frame akhir rantai animasi, GU sempat
+     melaporkan hunter belum siap / belum menghunus pedang selama satu frame.
+   - Kode lama menghapus tagihan biaya pada frame itu, sehingga hanya terlihat
+     pembatalan kenaikan native tanpa potongan akhir.
+   - State machine biaya Sakura dipindah ke atas pengecekan siap/hunus, dan
+     regresi host test ditambahkan untuk kasus drawn=0 / resources_ready=0.
+
+6. Log diagnostik
+   - "world_rank_pay <actor> <delta> <level>" sudah ada; sekarang dipakai untuk
+     memastikan pembatalan kenaikan native dan biaya Sakura.
+   - "world_sakura_stage" baru: mencatat tahap state machine
+     (1 = menunggu rantai native, 2 = rantai berjalan, 0 = selesai).
+     Field packed: drawn<<16 | ready<<8 | grace; field keempat = baseline level.
+   - "world_sakura_denied" baru: mencatat penolakan karena level bukan kuning
+     (level efektif, status biaya 兜割 masih tertunda, baseline).
+   - Penanda instalasi di log: "sakura-instant".
+
+7. Host test
+   - Dua test lulus:
+     * PASS: Guild ownership, art pass-through, World chord, Iai settled roll,
+       ISS follows, Spirit finish and native return
+     * PASS: source combat, typed interpolation, buffered alternating loop and
+       chord priority
+   - Cakupan baru: biaya dibayar pada frame aktivasi (rank_delta -2 saat kena
+     hit), tidak ada potongan di akhir animasi, gate hanya kuning (level 0/1/3
+     ditolak), level merah + biaya 兜割 tertunda tetap boleh, dan flicker
+     drawn/ready di akhir rantai tidak menghapus atau menggandakan biaya.
+
+8. Build (saat bagian ini ditulis)
+   - Ukuran : 487424 byte
+   - SHA256 : 6edbd70e15fb28ce1bb8486ad1e2df1362fc4d439ac5b98cd5c530126d66e9bc
+   - Penanda: sakura-instant
+   - Build terbaru dan hash terkini ada di bagian paling atas changelog ini.
+
+9. Yang tidak berubah
+   - Biaya 兜割 saat mendarat tetap 0,5 detik setelah mendarat (aturan asli).
+   - Sakura Slash yang dipasang normal di slot art tetap berperilaku native
+     (menaikkan 1 level).
+   - Alur Special Sheathe / Iai, aturan ISS gaya Rise, follow-up ISS di F70,
+     debounce ZR/B 2 frame, sheath x1.40, ZR fisik = ML_R, dan roll saat
+     mendarat Helm tidak diubah.
+
+10. Cara verifikasi singkat
+   - Ganti NRO di folder mod yang dipakai game, pastikan log instalasi memuat
+     "sakura-instant".
+   - Mulai dari merah: 兜割 -> mendarat -> lepas lalu tekan ZR.
+     Harapan log:
+       world_rank_pay ... FFFFFFFF ...   (biaya 兜割, 3 -> 2)
+       world_sakura_stage ... 00000001 ...
+       world_sakura_stage ... 00000002 ...
+       world_rank_pay ... FFFFFFFE ...   (batal naik + biaya, 3 -> 1) bila kena hit
+       world_sakura_stage ... 00000000 ...
+     Tidak ada lagi "world_rank_pay ... FFFFFFFF" di akhir animasi.
+   - Mulai dari kuning: 兜割 -> mendarat -> ZR.
+     Harapan log: "world_sakura_denied" dan tidak ada "world_native_follow".
+
+============================================================
+PERUBAHAN MEKANIK: ATURAN GU/WORLD -> ATURAN RISE
+============================================================
+(sudah aktif di build ini; bagian ini merangkum perubahan aturan main,
+ bukan tambahan baru pada build terakhir)
+
+A. Iai Spirit Slash (ISS) memakai aturan Rise
+   - Counter berhasil: naik 1 level spirit.
+   - Whiff: tidak ada penalti level (versi GU memotong 1 level).
+   - Naik level TIDAK mengosongkan isi bar spirit gauge (versi GU/World
+     mengosongkannya). Bar hanya berkurang oleh biaya gerakan seperti biasa.
+
+B. Finisher Spirit Roundslash juga tidak mengosongkan bar
+   - Kenaikan level dari rangkaian finisher (node 5) memakai aturan Rise:
+     level naik, isi bar tetap.
+
+C. Follow-up ISS gaya Rise (semua ditahan sampai frame F70)
+   - Counter berhasil + ZR+B -> kembali ke Special Sheathe.
+   - Counter berhasil + B sendiri -> roll; arah mengikuti stick, stick netral
+     mempertahankan arah terakhir.
+   - ZR+A (hanya setelah counter berhasil) -> Foresight Slash; whiff tidak
+     bisa melanjutkan.
+   - Counter berhasil + ZR sendiri -> Spirit III (气刃斩 III, butuh gauge >= 20),
+     lalu ZR baru sekali lagi -> Spirit Roundslash (气刃大回旋斩) bila gauge >= 25.
+   - Tombol yang ditekan cepat saat counter (F12-F14) tetap diingat dan baru
+     dieksekusi di F70, jadi animasi recovery ISS tidak terpotong dan input
+     tidak hilang.
+   - Prioritas chord: ZR+B, lalu B roll, lalu ZR+A, lalu ZR finisher.
+   - Roll dan kembali ke Special Sheathe hanya tersedia bila counter berhasil.
+
+D. Debounce 2 frame untuk ZR/B
+   - Status ZR dan B harus stabil 2 sampel sebelum dibaca, supaya ZR+B tidak
+     salah dibaca sebagai B roll (atau sebaliknya) di frame batas.
+
+E. Iai stance: roll arah baru aktif setelah stance siap
+   - B hanya diterima setelah source 306 masuk phase 1 (F73), yaitu saat root
+     motion sheathing selesai dan stance benar-benar siap.
+   - B sebelum F73 tidak di-buffer dan tidak memotong animasi sheathing.
+   - Arah roll mengikuti stick; stick netral mempertahankan arah terakhir.
+
+F. Tidak ada lagi loop sheathe tanpa batas
+   - Iai kecil/besar tidak bisa lagi ZR+B kapan saja untuk kembali ke Special
+     Sheathe (mekanik lama dihapus).
+   - Kembali ke Special Sheathe hanya tersedia sebagai follow-up khusus setelah
+     ISS counter berhasil.
+
+G. Kecepatan masuk Special Sheathe 1.40x
+   - Skill Quick Sheathe (4 ID GU) menaikkan kecepatan awal Special Sheathe
+     dari 1.16x (World) menjadi 1.40x, hanya untuk bagian awal animasi.
+   - Catatan: ini penyesuaian kecepatan, bukan aturan Rise murni.
+
+H. Yang tetap mengikuti World/GU (bukan Rise)
+   - Biaya level 兜割 (0,5 detik setelah mendarat), follow-up Sakura Slash +
+     gate kuning + biaya 1 level seketika, bonus spirit dasar 1.1x, iframe yang
+     memotong 2 frame terakhir window, serta collision native tidak diubah.
+
+Catatan: rincian teknis lengkap ada di README.md dan docs/改动说明.md.
+

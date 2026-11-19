@@ -1,0 +1,73 @@
+[
+  {
+    "keys": [
+      "mouse_right"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 0.65
+  },
+  {
+    "keys": [
+      "mouse_middle",
+      "space"
+    ],
+    "seconds": 0.2
+  },
+  {
+    "keys": [],
+    "seconds": 1.3
+  },
+  {
+    "keys": [
+      "mouse_left"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 0.6
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.18
+  },
+  {
+    "keys": [],
+    "seconds": 0.7
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.18
+  },
+  {
+    "keys": [],
+    "seconds": 0.85
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.18
+  },
+  {
+    "keys": [],
+    "seconds": 0.9
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.18
+  },
+  {
+    "keys": [],
+    "seconds": 2.5
+  }
+]

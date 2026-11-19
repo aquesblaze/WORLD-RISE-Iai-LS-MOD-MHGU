@@ -1,0 +1,22 @@
+[
+  {
+    "keys": [
+      "mouse_right"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 0.23
+  },
+  {
+    "keys": [
+      "mouse_middle"
+    ],
+    "seconds": 0.12
+  },
+  {
+    "keys": [],
+    "seconds": 3
+  }
+]

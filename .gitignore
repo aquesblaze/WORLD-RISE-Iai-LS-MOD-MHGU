@@ -1,0 +1,21 @@
+# Build artifacts (regenerate with cargo forge build)
+01_plugins/mhw_ls_rebuild/target/
+
+# Local caches. Keep only the generated header required by build.rs.
+.cache/*
+!.cache/mhw_ls_animation_port/
+.cache/mhw_ls_animation_port/*
+!.cache/mhw_ls_animation_port/attachment_data.h
+
+# Runtime logs and test output
+log/
+*.log
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+*.swp
