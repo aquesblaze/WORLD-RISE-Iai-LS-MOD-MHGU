@@ -44,7 +44,7 @@ fn main(){
     BASE.store(base,Ordering::Relaxed);
     forge::install_hook!(base,sample_pad);
     forge::install_hook!(base,vib_play);
-    info!("[ml-rebuild] installed; all styles; iai roll; sheath x1.40; iframe-2; native collision retained; rumble; chord-grace; lens-off");
+    info!("[ml-rebuild] installed; all styles; iai roll; sheath x1.45; iframe-2; native collision retained; rumble; chord-grace; lens-off");
 }
 
 

@@ -255,9 +255,9 @@ static float world_motion_speed(void *a,const WEvent *e)
     if(world.move==W_SHEATHE&&(e->common2&0x80000u)){
         /* GU's ordinary sheath handler2cde38 recognizes the same four Quick
          * Sheathe sources and sets1.4. The stock World attenuation was0.4,
-         * i.e.1.16; this build deliberately raises the bonus to1.40. */
+         * i.e.1.16; this build deliberately raises the bonus to1.45. */
         unsigned (*skill)(void *,unsigned)=(void *)(main_base+0x2864c4);
-        if(skill(a,0x5d)||skill(a,0x13a)||skill(a,0x117)||skill(a,0x129))speed*=1.40f;
+        if(skill(a,0x5d)||skill(a,0x13a)||skill(a,0x117)||skill(a,0x129))speed*=1.45f;
     }
     return speed;
 }

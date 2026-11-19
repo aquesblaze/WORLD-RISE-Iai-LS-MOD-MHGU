@@ -28,7 +28,7 @@ PC：解压 PC 成品包，将 `romfs` 放到游戏目录的 `mods/MHW_WORLD_DEV
 
 Eden：解压模拟器包，将 `romfs` 放到 `load/0100770008DD8000/MHW_WORLD_DEV/` 下。需要已安装的 Forge 加载器，本包不附带或覆盖加载器。
 
-GU 按键：攻击中 **ZR+A** 看破斩、**ZR+B** 特殊纳刀、**ZR+X** 气刃突刺；特殊纳刀后 X 小居合、**ZR** 大居合；开刃突刺命中可接气刃兜割。气刃兜割落地后先松开 ZR，再新按 **ZR** 可直接接 **Sakura Slash I**：这是原生狩技动作，不需要把 Sakura Slash 装在狩技槽，也不要求狩技槽充满；落地时一直按住下劈那一下的 ZR 不会误触发。单按 ZR 落地后会先等 10 帧确认没有 B/A 伙伴键：这期间按 B 仍进特殊纳刀（ZR+B）、按 A 仍接看破斩（ZR+A），不会被抢成 Sakura；伙伴键先按住、ZR 后按也一样。这一招使用时**扣 1 级练气等级**，而不是原版的升 1 级；插件会在招式发动那一瞬间（动作链开始的那一帧）取消原生升级并扣级，不等动画结束。并且**只有黄色练气等级能发动**（与《世界》一致）：红刃兜割落地扣到黄，接 Sakura 后立刻到白；黄刃兜割落地已变白，按 ZR 不会出招。注意兜割落地本身原有的扣级规则不变（落地后 0.5 秒结算），所以这套派生要从红刃起手，整套总共扣 2 级（兜割 1 级 + Sakura 1 级）。这里的 ZR 是 Switch 右扳机（内部符号 `ML_R`），不是 GU 原生 R 肩键。特殊纳刀要等源 306 进入 phase1（F73，收刀根位移结束、stance 真正就位）后才允许按 B 摇杆方向回避，早按不会截断收刀动画。大居合（ISS）按 Rise 规则：counter 成功升一级且不清空练气槽；失败不掉级；成功后 **ZR+B** 可回特殊纳刀，也可直接单按 B 回避；成功后才能 **ZR+A** 接看破斩，ISS 成功后单按 **ZR** 出气刃斩 III，再按一次 **ZR** 接气刃大回旋斩（需练气≥25）。ISS 的四种派生统一延后到 F70 才发动，早按会缓冲，动画不会被切断；B 回避不必先 ZR+B 回纳刀再等 stance 就位。收刀术使特殊纳刀起手加速为1.40倍；小居合及兜割命中后保留各自练气回复。
+GU 按键：攻击中 **ZR+A** 看破斩、**ZR+B** 特殊纳刀、**ZR+X** 气刃突刺；特殊纳刀后 X 小居合、**ZR** 大居合；开刃突刺命中可接气刃兜割。气刃兜割落地后先松开 ZR，再新按 **ZR** 可直接接 **Sakura Slash I**：这是原生狩技动作，不需要把 Sakura Slash 装在狩技槽，也不要求狩技槽充满；落地时一直按住下劈那一下的 ZR 不会误触发。单按 ZR 落地后会先等 10 帧确认没有 B/A 伙伴键：这期间按 B 仍进特殊纳刀（ZR+B）、按 A 仍接看破斩（ZR+A），不会被抢成 Sakura；伙伴键先按住、ZR 后按也一样。这一招使用时**扣 1 级练气等级**，而不是原版的升 1 级；插件会在招式发动那一瞬间（动作链开始的那一帧）取消原生升级并扣级，不等动画结束。并且**只有黄色练气等级能发动**（与《世界》一致）：红刃兜割落地扣到黄，接 Sakura 后立刻到白；黄刃兜割落地已变白，按 ZR 不会出招。注意兜割落地本身原有的扣级规则不变（落地后 0.5 秒结算），所以这套派生要从红刃起手，整套总共扣 2 级（兜割 1 级 + Sakura 1 级）。这里的 ZR 是 Switch 右扳机（内部符号 `ML_R`），不是 GU 原生 R 肩键。特殊纳刀要等源 306 进入 phase1（F73，收刀根位移结束、stance 真正就位）后才允许按 B 摇杆方向回避，早按不会截断收刀动画。大居合（ISS）按 Rise 规则：counter 成功升一级且不清空练气槽；失败不掉级；成功后 **ZR+B** 可回特殊纳刀，也可直接单按 B 回避；成功后才能 **ZR+A** 接看破斩，ISS 成功后单按 **ZR** 出气刃斩 III，再按一次 **ZR** 接气刃大回旋斩（需练气≥25）。ISS 的四种派生统一延后到 F70 才发动，早按会缓冲，动画不会被切断；B 回避不必先 ZR+B 回纳刀再等 stance 就位。收刀术使特殊纳刀起手加速为1.45倍；小居合及兜割命中后保留各自练气回复。
 
 卸载：关闭游戏，移除 `MHW_WORLD_DEV` 文件夹。
 
@@ -97,7 +97,7 @@ cargo forge build --release
    窗口：小居合 ~5→3 帧；大居合（308）约 12→10 帧；大居合（309-311）约 14→12 帧。
    原先"+2 帧延后"的 `WORLD_IAI_INVULN_EXTEND` 机制已移除。
 4. `build.rs` 支持 `ARM_NONE_EABI_GCC` 环境变量；安装日志
-   `installed; all styles; iai roll; sheath x1.40; iframe-2; native collision retained; rumble; chord-grace; lens-off`。
+   `installed; all styles; iai roll; sheath x1.45; iframe-2; native collision retained; rumble; chord-grace; lens-off`。
 5. **Iai stance 的 B 回避只在 stance 就位后开放**：`c/world_command_driver.inc` 的 `W_SHEATHE` 分支用
    `fresh=b->held&~s->consumed` 排除进纳刀那一下 B，并要求 `event->phase==1`（源 306 从 F73 起）。
    早于 F73 按 B 不缓冲、不打断收刀根位移；就位后新按 B 才发 `W_ROLL`。
@@ -114,8 +114,8 @@ cargo forge build --release
    ZR 这一下还会从它自己的按下帧重新计算这段宽限，所以即使 ZR 在 F70 之后才按，也能等满整个窗口：
    ZR 先按、B 晚到仍判定为 ZR+B（特殊纳刀），不会抢成 Spirit III；B 先按、ZR 晚到同理。
    伙伴键先按住、ZR 后按也按 ZR+B / ZR+A 处理。ZR+B / ZR+A 一旦成立立即发动，不再等这 10 帧。
-7. **收刀术加速改回 1.40**：`c/world_adapter.inc` 的 `world_motion_speed()` 保留四个 GU 速纳技能 ID，
-   把原本 World 衰减后的 `1.16f` 改为 `1.40f`，只作用于特殊纳刀起手段。
+7. **收刀术加速改回 1.45**：`c/world_adapter.inc` 的 `world_motion_speed()` 保留四个 GU 速纳技能 ID，
+   把原本 World 衰减后的 `1.16f` 改为 `1.45f`，只作用于特殊纳刀起手段。
 8. **ISS 成功后 ZR 收尾连段**：`c/world_command_driver.inc` 在 `W_BIG` 分支里锁存一次新的单按 ZR
    （`follow_ready`），到 F70 且 counter 成功时才兑现 → `ground_enter(s,o,36,ML_R)`。这样即使玩家在
    counter 发生的 F12～F14 立刻按 ZR、到 F70 前已松开，也不会丢输入；同时给 ISS 回收动画留出

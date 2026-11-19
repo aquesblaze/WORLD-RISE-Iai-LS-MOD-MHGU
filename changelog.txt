@@ -1,9 +1,31 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-19
-Build terakhir: foresight-win
+Build terakhir: quick-sheathe-1.45
 
 ============================================================
-PERUBAHAN TERBARU (Foresight Slash hanya setelah ISS berhasil)
+PERUBAHAN TERBARU (Quick Sheathe 1.40x -> 1.45x)
+============================================================
+
+1. Kecepatan masuk Special Sheathe dengan Quick Sheathe
+   - world_motion_speed() di c/world_adapter.inc sekarang mengalikan speed
+     dengan 1.45f (sebelumnya 1.40f).
+   - Berlaku hanya saat W_SHEATHE dengan common2 bit 0x80000 (segmen awal)
+     dan salah satu skill ID 0x5d / 0x13a / 0x117 / 0x129 aktif.
+   - Tanpa skill tetap 1.0x; setelah segmen awal juga kembali 1.0x.
+   - Log instalasi, README, docs, probe, dan inspector ikut diselaraskan.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro
+   - Ukuran : 487424 byte
+   - SHA256 : d764f0ac076debdce38961711ce6d231cf38fa8c6e2179cbc4f51d23bf0a11e5
+   - Baris instalasi yang harus muncul:
+     [ml-rebuild] installed; all styles; iai roll; sheath x1.45; iframe-2;
+     native collision retained; rumble; chord-grace; lens-off
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+   - Toolchain: Rust nightly + cargo-mhgu-forge + xPack arm-none-eabi-gcc 15.2.1
+
+============================================================
+PERUBAHAN SEBELUMNYA (Foresight Slash hanya setelah ISS berhasil)
 ============================================================
 
 1. Foresight Slash dari ISS tidak lagi bisa dipakai saat whiff
