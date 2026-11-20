@@ -242,8 +242,10 @@ int main(void)
     for(unsigned f=30;f<90;++f)assert(tick((float)f,0).kind==W_KEEP);
     d=press(90,100,ML_R);
     d=tick(110,0);assert(d.kind==W_NATIVE&&d.native_action==30);
-    /* Adept owns no native frame-90 ZR window in Spirit III. Style3 fires the
-     * same node5 action30 on a fresh ZR immediately; Guild still needs F110. */
+    /* Adept owns no native frame-90 ZR window in Spirit III. Style3 buffers a
+     * fresh ZR and fires the same node5 action30 only after the ground slash
+     * has landed; an early ZR must not cut the slash short. Guild still needs
+     * its own TIML window (F110). */
     reset(0);o.style=3;d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
     assert(tick(60,0).kind==W_KEEP);
     d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
@@ -253,7 +255,9 @@ int main(void)
     d=tick(70+W_ISS_CHORD_GRACE,0);
     assert(d.kind==W_ENTER&&d.move==W_GROUND&&d.source==124&&s.ground_node==2);
     bind(d);d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
-    d=tick(4,ML_R);assert(d.kind==W_NATIVE&&d.native_action==30);
+    assert(tick(4,ML_R).kind==W_KEEP);
+    assert(tick(90,0).kind==W_KEEP);
+    d=tick(W_ADEPT_ROUNDSLASH_FRAME,0);assert(d.kind==W_NATIVE&&d.native_action==30);
     /* The Adept bypass keeps node5's 25-gauge gate and ignores a held ZR. */
     reset(0);o.style=3;o.base.gauge=24;d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);
@@ -264,12 +268,66 @@ int main(void)
     d=tick(70+W_ISS_CHORD_GRACE,0);assert(d.kind==W_ENTER&&d.source==124);bind(d);
     d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
     assert(tick(4,ML_R).kind==W_KEEP);
+    assert(tick(90,0).kind==W_KEEP);
+    assert(tick(W_ADEPT_ROUNDSLASH_FRAME,0).kind==W_KEEP);
     /* The actual Adept combo is native (no plugin W_GROUND move): action26 /
-     * motion56C still resolves to node2, so the same bypass applies there. */
+     * motion56C still resolves to node2, so the same buffering applies. */
     reset(1);o.style=3;o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
-    d=tick(4,ML_R);assert(d.kind==W_NATIVE&&d.native_action==30);
+    assert(tick(4,ML_R).kind==W_KEEP);
+    assert(tick(90,0).kind==W_KEEP);
+    d=tick(W_ADEPT_ROUNDSLASH_FRAME,0);assert(d.kind==W_NATIVE&&d.native_action==30);
+    /* A partner key cancels the buffered ZR; a fresh ZR after the delay still works. */
+    reset(1);o.style=3;o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
+    assert(tick(4,ML_R).kind==W_KEEP);
+    assert(tick(5,ML_R|ML_B).kind==W_KEEP);
+    assert(tick(90,0).kind==W_KEEP);
+    assert(tick(W_ADEPT_ROUNDSLASH_FRAME,0).kind==W_KEEP);
+    d=tick(W_ADEPT_ROUNDSLASH_FRAME,ML_R);assert(d.kind==W_NATIVE&&d.native_action==30);
     reset(1);o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
     assert(tick(4,ML_R).kind==W_KEEP); /* Guild keeps the TIML-owned window */
+    assert(tick(90,0).kind==W_KEEP);
+    assert(tick(W_ADEPT_ROUNDSLASH_FRAME,0).kind==W_KEEP);
+    /* Only Adept Spirit Reckoning (action 0x43) opens the World chords. Solo
+     * ZR is left native, and the partner may arrive first or second. */
+    for(unsigned phase=0;phase<2;++phase){
+        static const unsigned mots[]={0x5B9,0x5BA};
+        reset(1);o.style=3;o.state=16;
+        o.base.native_action=0x43;o.base.motion=mots[phase];
+        assert(press(10,14,ML_R).kind==W_KEEP);
+        reset(1);o.style=3;o.state=16;
+        o.base.native_action=0x43;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+        reset(1);o.style=3;o.state=16;
+        o.base.native_action=0x43;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_A);assert(d.kind==W_ENTER&&d.move==W_FORESIGHT);
+        reset(1);o.style=3;o.state=16;
+        o.base.native_action=0x43;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_X);assert(d.kind==W_ENTER&&d.move==W_THRUST);
+        reset(1);o.style=3;o.state=16;
+        o.base.native_action=0x43;o.base.motion=mots[phase];
+        assert(tick(10,ML_B).kind==W_KEEP);
+        d=press(14,18,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+    }
+    /* Cut-In stays native: no World chord after X. */
+    reset(1);o.style=3;o.state=1;
+    o.base.native_action=0xAE;o.base.motion=0x5B6;
+    assert(press(10,14,ML_R|ML_B).kind==W_KEEP);
+    reset(1);o.style=3;o.state=16;
+    o.base.native_action=0x55;o.base.motion=0x5B9;
+    assert(press(10,14,ML_R|ML_X).kind==W_KEEP);
+    /* A ZR held from Cut-In into Reckoning must not steal the Reckoning pose;
+     * a fresh chord after releasing ZR is required. */
+    reset(1);o.style=3;o.state=16;o.base.native_action=0x55;o.base.motion=0x5B9;
+    for(unsigned f=8;f<=12;++f)assert(tick((float)f,ML_R).kind==W_KEEP);
+    o.base.native_action=0x43;o.base.motion=0x5B9;
+    for(unsigned f=13;f<=17;++f)assert(tick((float)f,ML_R|ML_B).kind==W_KEEP);
+    for(unsigned f=18;f<=19;++f)assert(tick((float)f,0).kind==W_KEEP);
+    d=press(20,24,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+    /* Other styles and unrecognised native moves keep their native path. */
+    reset(1);o.state=16;o.base.native_action=0x43;o.base.motion=0x5B9;
+    assert(press(10,14,ML_R|ML_B).kind==W_KEEP);
+    reset(1);o.style=3;o.state=16;o.base.native_action=0x43;o.base.motion=0x5B9;
+    assert(press(10,14,ML_R|ML_Y).kind==W_KEEP);
     /* The finisher needs 20 gauge; the Roundslash edge still needs 25. */
     reset(0);o.base.gauge=15;d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);

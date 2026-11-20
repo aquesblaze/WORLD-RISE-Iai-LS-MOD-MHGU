@@ -1,9 +1,59 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-19
-Build terakhir: adept-spirit-roundslash
+Build terakhir: adept-roundslash-buffered
 
 ============================================================
-PERUBAHAN TERBARU (Spirit Roundslash native di Adept)
+PERUBAHAN TERBARU (Reckoning -> World + Roundslash buffer F90)
+============================================================
+
+1. Hanya Spirit Reckoning yang bisa masuk ke move mod World
+   - Log diagnostik AF_EDGE/AF_FOLLOW menunjukkan:
+       Cut-In    : state1 action 0xAE motion 0x5B6 -> state16 action 0x55 motion 0x5B6/0x5B9
+       Reckoning : state16 action 0x43 motion 0x5B9 -> action 0x43 motion 0x5BA
+     Cut-In sengaja TIDAK diberi chord World: yang diminta setelah testing adalah
+     ZR setelah Cut-In tetap Spirit Reckoning native (tanpa flash animasi yang
+     ditimpa move World).
+   - c/world_core.h + c/world_core.c: WState mendapat
+     adept_chord/adept_chord_wait/adept_r_clear, di-reset oleh w_leave().
+   - c/world_command_driver.inc: w_adept_reckoning() hanya menerima style==3,
+     state16, action 0x43, motion 0x5B9/0x5BA. Sebelum guard, chord ZR+B /
+     ZR+A / ZR+X yang sudah matang (~4 frame) masuk ke W_SHEATHE /
+     W_FORESIGHT / W_THRUST. Dari W_THRUST, hit menghasilkan Spirit Thrust ->
+     Helm Breaker seperti biasa.
+   - adept_r_clear hanya direset oleh ZR tunggal (ZR tanpa B/A/X), jadi ZR yang
+     memulai Reckoning mengunci chord sampai ZR dilepas >=2 frame. Chord harus
+     dimulai ulang setelah Reckoning berdiri; ZR yang dibawa dari Cut-In tidak
+     pernah menyita animasi Reckoning.
+   - ZR tunggal tidak diintersep: native tetap mengeluarkan Spirit Reckoning.
+     Guard tombol Y / R fisik (ML_ZR) dipertahankan. Gaya lain, ISS, Foresight,
+     Sakura Slash dan biaya gauge tidak berubah.
+   - Cara pakai: Adept -> Adept Evade -> X (Cut-In) -> ZR (Reckoning) -> lepas
+     ZR sebentar -> ZR+B/A/X untuk special sheathe / foresight / spirit thrust.
+
+2. Bug Spirit Slash III langsung tersambung Roundslash (ZR x4)
+   - Log terbaru: world_native_follow action30 / motion 0x56C keluar di F0/F42;
+     setelah dibuffer ke F90 user masih melihat Roundslash sebelum tebasan
+     terakhir Spirit III menyentuh tanah.
+   - Penyebab: bypass style3 lama mengirim action30 seketika pada fresh ZR.
+   - c/world_core.h + c/world_core.c: WState dapat adept_round_pending,
+     di-reset oleh w_leave().
+   - c/world_command_driver.inc: ZR pada source108 / node2 (style3, gauge>=25)
+     sekarang hanya memasang pending. action30 baru dikirim saat
+     frame>=W_ADEPT_ROUNDSLASH_FRAME (105), 15 frame setelah jendela izin F90,
+     supaya tebasan terakhir selesai lebih dulu. Tombol B/A/X/Y/R membatalkan
+     pending; pergantian motion/state juga mengosongkannya. ZR baru setelah F105
+     tetap langsung keluar. Gaya lain dan TIML Guild tidak berubah.
+
+3. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : 0070d984fd3eae7bdd388957510bd1161185a59334ed6d0facc3fd0944fdb28e
+   - Repository tidak menyimpan file NRO; `.gitignore` sekarang mengecualikan
+     `*.nro` supaya hasil build dan file diagnostik tidak ikut ter-commit.
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+
+============================================================
+PERUBAHAN SEBELUMNYA (Spirit Roundslash native di Adept)
 ============================================================
 
 1. Spirit Roundslash sekarang bisa dipakai di Adept Long Sword

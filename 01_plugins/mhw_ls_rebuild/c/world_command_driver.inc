@@ -24,6 +24,17 @@ static unsigned world_property(WGroundQuery *q,unsigned property)
     if(value)q->values|=bit;
     return value;
 }
+/* Adept Spirit Reckoning is a native-only state: w_guild_source() has no slot
+ * for it, so the unowned-state guard below discards every input. Style3 alone
+ * maps its observed action/motion pair to the ordinary World ground chords.
+ * Adept Cut-In is deliberately NOT here: ZR after Cut-In must remain the plain
+ * native Reckoning, with no World move stealing its animation. */
+static unsigned w_adept_reckoning(const WObservation *o)
+{
+    return o->style==3&&o->grounded&&o->state==16&&
+        o->base.native_action==0x43&&
+        (o->base.motion==0x5B9||o->base.motion==0x5BA);
+}
 static int world_query_node(WGroundQuery *q,unsigned node)
 {
     const WGroundNode *n=w_ground_node(node);if(!n)return -1;
@@ -156,6 +167,37 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
                 s->air_sheathe_buffer=.35f;
         }
         s->air_sheathe_held=b->held;
+    }
+    /* Adept Spirit Reckoning has no World source and no TIML permission bits.
+     * Accept the ordinary ZR chords before the unowned-state guard discards
+     * them, but only for a chord that begins after Reckoning is already up.
+     * A ZR held through Cut-In (which started Reckoning) must not immediately
+     * override that animation with a World move. */
+    unsigned adept_armed=s->adept_r_clear>=2;
+    /* Only a solo ZR resets the arming timer: the ZR that starts Reckoning is
+     * solo, while a later ZR+B/A/X chord must stay armed for its whole hold. */
+    if((b->held&ML_R)&&!(b->held&(ML_B|ML_A|ML_X)))s->adept_r_clear=0;
+    else if(!(b->held&ML_R)&&s->adept_r_clear<3)++s->adept_r_clear;
+    if(!s->move&&w_adept_reckoning(o)){
+        unsigned other=b->held&(ML_B|ML_A|ML_X);
+        unsigned choice=0;
+        if(adept_armed&&b->animation_frame>=4&&(b->held&ML_R)&&
+           !(b->held&(ML_Y|ML_ZR))){
+            if(other==ML_B)choice=W_SHEATHE;
+            else if(other==ML_A)choice=W_FORESIGHT;
+            else if(other==ML_X)choice=W_THRUST;
+        }
+        /* Let the chord mature like the controls VM does, so a button pressed
+         * as part of the native Reckoning animation is not stolen instantly. */
+        if(choice&&choice==s->adept_chord){
+            if(++s->adept_chord_wait>=4){
+                unsigned mask=choice==W_SHEATHE?ML_R|ML_B:
+                    choice==W_FORESIGHT?ML_R|ML_A:ML_R|ML_X;
+                return enter(s,o,choice,mask);
+            }
+        }else{s->adept_chord=choice;s->adept_chord_wait=0;}
+        s->controls=(WControls){0};s->gu_chord_wait=0;s->adept_round_pending=0;
+        return (WDecision){0};
     }
     /* 循环纳刀按需求移除（纳刀原则参照「还原世界 v1.1」）：
      * 居合/纳刀结束后不再用 R+B 直接接纳刀，特殊纳刀只走源 TIML 的正常窗口，
@@ -399,17 +441,24 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
         return ground_enter(s,o,61,ML_R|ML_B);
     /* Adept's Spirit III (source108) never opens GU's ZR TIML window, so the
      * source graph's node2 -> node5 Roundslash edge cannot fire at its normal
-     * frame. Style3 alone accepts a freshly pressed ZR with node5's own gauge
-     * gate and submits its action30 directly. world_route() deliberately
-     * declines node5 when no plugin move is bound (Guild owns it natively),
-     * so the native-Adept case must not go through that helper. Every other
-     * style keeps the TIML-owned permission path unchanged. */
-    if(node==2&&o->style==3&&!s->main_source&&
-       o->base.gauge>=25&&(fresh&ML_R)&&s->controls.buttons[2].edge&&
-       !(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR))){
-        WDecision d=w_leave(s);d.kind=W_NATIVE;d.native_action=30;
-        d.heading=o->base.heading;return d;
-    }
+     * frame. Style3 alone buffers a freshly pressed ZR with node5's own gauge
+     * gate and submits its action30 after W_ADEPT_ROUNDSLASH_FRAME, letting the
+     * Spirit III ground slash finish. world_route() deliberately declines node5
+     * when no plugin move is bound (Guild owns it natively), so the native-Adept
+     * case must not go through that helper. Firing too early cut straight into
+     * Roundslash on the first ZR of the ZR-ZR-ZR-ZR chain; every other style
+     * keeps the TIML path. */
+    if(node==2&&source==108&&o->style==3&&!s->main_source&&
+       o->base.gauge>=25){
+        if(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR))s->adept_round_pending=0;
+        else{
+            if((fresh&ML_R)&&s->controls.buttons[2].edge)s->adept_round_pending=1;
+            if(s->adept_round_pending&&frame>=W_ADEPT_ROUNDSLASH_FRAME){
+                WDecision d=w_leave(s);d.kind=W_NATIVE;d.native_action=30;
+                d.heading=o->base.heading;return d;
+            }
+        }
+    }else s->adept_round_pending=0;
     int next=world_query_node(&query,node);
     if(next>=0){
         WDecision d=world_route(s,o,(unsigned)next);

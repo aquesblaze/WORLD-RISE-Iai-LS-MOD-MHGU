@@ -40,6 +40,10 @@ enum { W_ISS_CHORD_GRACE=10 };
  * frames before it becomes Sakura Slash, so a late B/A can still complete
  * ZR+B (special sheathe) or ZR+A (Foresight). */
 enum { W_LAND_CHORD_GRACE=10 };
+/* Adept's native Spirit III has no TIML window, so the style3 bypass waits
+ * until the ground slash has landed before starting Roundslash. The source
+ * permission opens at F90; this adds a short tail to the slash animation. */
+enum { W_ADEPT_ROUNDSLASH_FRAME=105 };
 typedef struct {
     unsigned actor,epoch,move,source,slot,heading,rank,previous_held,sample;
     WKeys keys;
@@ -54,6 +58,8 @@ typedef struct {
     unsigned iss_zr_frame; /* frame the solo-ZR follow-up was latched */
     unsigned land_r_clear; /* samples since ZR was last held; gates the landing follow-up */
     unsigned land_zr_wait; /* landing solo-ZR chord grace countdown */
+    /* Native Adept Spirit Reckoning chords (no World source/TIML window). */
+    unsigned adept_chord,adept_chord_wait,adept_r_clear,adept_round_pending;
     /* Sakura Slash I follow-up: 0 off, 1 waiting for the native chain,
      * 2 playing. The native art raises the spirit level; the follow-up turns
      * that into a one-level cost, paid on the frame the chain starts so the

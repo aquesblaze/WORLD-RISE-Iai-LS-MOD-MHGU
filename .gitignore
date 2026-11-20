@@ -1,5 +1,6 @@
 # Build artifacts (regenerate with cargo forge build)
 01_plugins/mhw_ls_rebuild/target/
+*.nro
 
 # Local caches. Keep only the generated header required by build.rs.
 .cache/*
