@@ -1,9 +1,35 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
-Tanggal: 2026-11-19
-Build terakhir: adept-roundslash-buffered
+Tanggal: 2026-11-21
+Build terakhir: sakura-landing-disabled
 
 ============================================================
-PERUBAHAN TERBARU (Reckoning -> World + Roundslash buffer F90)
+PERUBAHAN TERBARU (Sakura Slash I setelah Helm Breaker dinonaktifkan)
+============================================================
+
+1. Follow-up Sakura Slash I dimatikan, kode tetap disimpan
+   - c/world_core.h: makro baru W_SAKURA_LANDING_ENABLED = 0. Set ke 1
+     (atau build dengan -DW_SAKURA_LANDING_ENABLED=1) untuk mengaktifkan
+     kembali follow-up tanpa mengubah state machine.
+   - c/world_command_driver.inc: hanya blok dispatch native action51,
+     rank gate (hanya yellow) dan cost tracking yang dibungkus makro.
+     Chord ZR+B / ZR+A saat mendarat, debounce ZR dive, dan W_LAND_CHORD_GRACE
+     tetap aktif: ZR tunggal sekarang cuma lewat grace lalu berakhir tanpa
+     memanggil Sakura. Tidak ada rank cost yang dipungut.
+   - c/world_core.c: perhitungan biaya Sakura di w_step() sengaja dibiarkan
+     utuh; selama tidak ada permintaan action51, sakura_stage tetap 0.
+   - tests/world_command_core_test.c: kasus lama tetap dikompilasi di bawah
+     #if W_SAKURA_LANDING_ENABLED; cabang #else memastikan tidak ada native
+     request, tidak ada sakura_denied, dan tidak ada perubahan rank.
+     Kedua mode sudah dijalankan dan lolos.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : b416b8ebf2e7f3bde676ca864570e95db874af2cfe201bf60f15c898994fb5db
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+
+============================================================
+PERUBAHAN SEBELUMNYA (Reckoning -> World + Roundslash buffer F90)
 ============================================================
 
 1. Hanya Spirit Reckoning yang bisa masuk ke move mod World

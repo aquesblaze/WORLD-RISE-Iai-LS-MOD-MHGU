@@ -499,13 +499,22 @@ int main(void)
      * during the Helm landing dispatches the native Long Sword art action
      * directly, with GU's own art request flags, without an equipped slot or
      * an art gauge. Wilds-style: only yellow (2) is accepted, which is the
-     * level a red Helm Breaker leaves behind. */
+     * level a red Helm Breaker leaves behind. The whole dispatch stays in the
+     * tree behind W_SAKURA_LANDING_ENABLED; disabled is the current default. */
+#if W_SAKURA_LANDING_ENABLED
     reset(0);s.move=W_LAND;s.source=174;s.slot=229;o.rank=2;
     o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
     assert(tick(0,0).kind==W_KEEP);
     d=land_solo(1);
     assert(d.kind==W_NATIVE&&d.native_action==W_ART_SAKURA_SLASH&&
            d.native_flags==W_ART_SAKURA_FLAGS&&!s.move);
+#else
+    reset(0);s.move=W_LAND;s.source=174;s.slot=229;o.rank=2;
+    o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
+    assert(tick(0,0).kind==W_KEEP);
+    d=land_solo(1);
+    assert(d.kind==W_KEEP&&s.move==W_LAND&&!s.sakura_stage&&!s.sakura_denied);
+#endif
     /* A late partner inside the landing grace completes the chord instead of
      * the art: ZR+B is the special sheathe, ZR+A is Foresight. This is the
      * Helm-landing misclick (ZR pressed a few frames before B/A). */
@@ -535,7 +544,8 @@ int main(void)
     d=tick(2,ML_R|ML_A);
     assert(d.kind==W_ENTER&&d.move==W_FORESIGHT);
     /* Holding the ZR that started the dive cannot fire it; the button has to
-     * be released before the landing press is accepted. */
+     * be released before the landing press is accepted. The debounce is kept
+     * even while the art itself is disabled. */
     reset(0);s.move=W_LAND;s.source=174;s.slot=229;s.land_r_clear=0;o.rank=2;
     o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
     assert(tick(0,ML_R).kind==W_KEEP);
@@ -544,13 +554,18 @@ int main(void)
     assert(tick(3,0).kind==W_KEEP);
     assert(tick(4,0).kind==W_KEEP);
     d=land_solo(5);
+#if W_SAKURA_LANDING_ENABLED
     assert(d.kind==W_NATIVE&&d.native_action==W_ART_SAKURA_SLASH&&!s.move);
+#else
+    assert(d.kind==W_KEEP&&s.move==W_LAND&&!s.sakura_stage);
+#endif
     /* A partner keeps the existing landing chord; the art is solo ZR only. */
     reset(0);s.move=W_LAND;s.source=174;s.slot=229;o.rank=2;
     o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
     assert(tick(0,0).kind==W_KEEP);
     d=tick(1,ML_R|ML_A);
     assert(!(d.kind==W_NATIVE&&d.native_action==W_ART_SAKURA_SLASH));
+#if W_SAKURA_LANDING_ENABLED
     /* The native art raises the spirit level; the follow-up converts that to
      * a one-level cost. The raise is cancelled and the cost is paid on the
      * activation frame, so the level drops with the move instead of after it. */
@@ -634,5 +649,27 @@ int main(void)
     for(unsigned f=f0+3;f<f0+7;++f)assert(tick((float)f,0).rank_delta==0);
     d=tick((float)(f0+7),0);
     assert(d.rank_delta==0&&!s.sakura_stage);
+#else
+    /* Disabled by default: no native request, no rank gate, no cost. The
+     * solo ZR still consumes its chord grace, so a late B/A keeps working.
+     * The cost tracker stays inert even if the art animation appears from
+     * elsewhere, because no Sakura request was issued by this driver. */
+    unsigned f0=1+W_LAND_CHORD_GRACE;
+    reset(0);s.move=W_LAND;s.source=174;s.slot=229;o.rank=2;
+    o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
+    assert(tick(0,0).kind==W_KEEP);
+    d=land_solo(1);
+    assert(d.kind==W_KEEP&&s.move==W_LAND&&!s.sakura_stage&&!s.sakura_denied);
+    o.base.native_action=W_ART_SAKURA_SLASH;o.base.motion=0x701;o.rank=3;
+    for(unsigned f=f0+1;f<f0+10;++f)assert(tick((float)f,0).rank_delta==0);
+    assert(!s.sakura_stage&&!s.sakura_paid);
+    for(unsigned rank=0;rank<4;++rank){
+        reset(0);s.move=W_LAND;s.source=174;s.slot=229;o.rank=rank;
+        o.state=16;o.base.native_action=w_action(W_LAND);o.base.motion=0x500+229;
+        assert(tick(0,0).kind==W_KEEP);
+        d=land_solo(1);
+        assert(d.kind==W_KEEP&&s.move==W_LAND&&!s.sakura_stage&&!s.sakura_denied);
+    }
+#endif
     puts("PASS: Guild ownership, art pass-through, World chord, Iai settled roll, ISS follows, Spirit finish and native return");
 }

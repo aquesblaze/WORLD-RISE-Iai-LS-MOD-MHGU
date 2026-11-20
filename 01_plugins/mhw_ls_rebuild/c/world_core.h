@@ -44,6 +44,15 @@ enum { W_LAND_CHORD_GRACE=10 };
  * until the ground slash has landed before starting Roundslash. The source
  * permission opens at F90; this adds a short tail to the slash animation. */
 enum { W_ADEPT_ROUNDSLASH_FRAME=105 };
+/* Sakura Slash I after a Spirit Helm Breaker landing. The native-art dispatch
+ * and rank gate are fully implemented but currently compiled out. Set this to
+ * 1 (or pass -DW_SAKURA_LANDING_ENABLED=1) to restore the follow-up without
+ * rewriting the state machine. The cost tracking in w_step() stays compiled
+ * and is simply inert while no art request is issued. Landing ZR+B / ZR+A
+ * chords are always kept, independent of this toggle. */
+#ifndef W_SAKURA_LANDING_ENABLED
+#define W_SAKURA_LANDING_ENABLED 0
+#endif
 typedef struct {
     unsigned actor,epoch,move,source,slot,heading,rank,previous_held,sample;
     WKeys keys;

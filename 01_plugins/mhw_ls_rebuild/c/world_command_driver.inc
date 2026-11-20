@@ -350,6 +350,9 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
          * land_r_clear additionally requires a release, so holding the dive
          * button cannot fire the follow-up. A/B/X/Y keep their existing landing
          * chords (special sheathe and Foresight).
+         * The art dispatch below is gated by W_SAKURA_LANDING_ENABLED (0 by
+         * default): the follow-up is currently disabled but all of its state
+         * tracking stays compiled, so setting the toggle to 1 restores it.
          * Wilds-style gating: the art belongs to the level the Helm Breaker
          * leaves behind. The landing cost is either still pending (0.5 s) or
          * already paid, so compare against the rank after it: only yellow (2)
@@ -392,6 +395,7 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
             }
         }
         if(fire&&!(b->held&(ML_X|ML_A|ML_B|ML_Y|ML_ZR))){
+#if W_SAKURA_LANDING_ENABLED
             /* The Helm landing cost may still be queued for 0.5 s; judge the
              * level the player will be left with, not the one still shown. */
             int rank_after=(int)o->rank;
@@ -411,6 +415,11 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
                 s->sakura_frames=0;s->sakura_grace=0;s->sakura_paid=0;
                 return d;
             }
+#else
+            /* Temporarily disabled. The solo ZR still goes through the chord
+             * grace above, so a late B/A keeps working; it simply has no art
+             * follow-up while the toggle is 0. */
+#endif
         }
     }
     if(s->move==W_SHEATHE_END){
