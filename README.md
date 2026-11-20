@@ -6,7 +6,7 @@
 
 在太刀上加入《怪物猎人：世界／冰原》的看破斩、特殊纳刀、小居合、大居合、气刃突刺和气刃兜割。
 
-**本改版（非官方）**：① 去掉「仅公会风格」限制，六种风格均可用；② ISS 改为 Rise 规则：counter 成功升一级且不清空练气槽，失败不掉级，成功后可回特殊纳刀，只有成功后才能接看破斩；③ 特殊纳刀 stance 就位后才允许 B 方向回避；④ 居合无敌帧改用与另一版相同的判定：源 `common` bit26 窗口，末尾少 2 帧（不再额外延后）；⑤ ISS 成功后单按 ZR / 单按 B 有 10 帧合流窗口（单按 ZR 还会从 ZR 自己的按下帧起算）：先按 ZR 再补 B 仍判定为 ZR+B 特殊纳刀，不会被抢成 Spirit III；登龙落地单按 ZR 同样有 10 帧合流窗口，晚到的 B/A 仍进特殊纳刀/看破斩。详见文末「本改版改动」。PC 主要验证环境为 MHGURecomp 0.16.0；模拟器对应 GU 国际版 v1.4.0、0100770008DD8000 和现有 Forge 加载器。
+**本改版（非官方）**：① 去掉「仅公会风格」限制，六种风格均可用；② ISS 改为 Rise 规则：counter 成功升一级且不清空练气槽，失败不掉级，成功后可回特殊纳刀，只有成功后才能接看破斩；③ 特殊纳刀 stance 就位后才允许 B 方向回避；④ 居合无敌帧改用与另一版相同的判定：源 `common` bit26 窗口，末尾少 2 帧（不再额外延后）；⑤ ISS 成功后单按 ZR / 单按 B 有 10 帧合流窗口（单按 ZR 还会从 ZR 自己的按下帧起算）：先按 ZR 再补 B 仍判定为 ZR+B 特殊纳刀，不会被抢成 Spirit III；登龙落地单按 ZR 同样有 10 帧合流窗口，晚到的 B/A 仍进特殊纳刀/看破斩；⑥ **勇气风格新增 Spirit Roundslash**：Adept（style3）气刃斩 III（action26 / motion0x56C）后新按 ZR 且练气槽 ≥25 即可接 action30，不必等原生 frame90 的 TIML 窗口，其他五种风格保持原样。详见文末「本改版改动」。PC 主要验证环境为 MHGURecomp 0.16.0；模拟器对应 GU 国际版 v1.4.0、0100770008DD8000 和现有 Forge 加载器。
 
 ## v1.0.7 更新（含 v1.0.6 修复）
 
@@ -149,5 +149,4 @@ $env:CARGO_TARGET_ARMV7A_NONE_EABI_LINKER=$env:ARM_NONE_EABI_GCC
 cargo forge build --release
 ```
 
-产物 `mhw_ls_rebuild.nro` 487424 字节，SHA256 `8e3dbee6513e81e0f1d4f9eaa2ad59b21534117e8560849d309e200556b88ad2`，段大小（.text 0x16a20 / .rodata 0x5e3d0 / .data 0x91c / .bss 0xc000）
-与官方 v1.0.7 一致。
+当前改版产物 `mhw_ls_rebuild.nro` 487424 字节，SHA256 `5b6dda757c361745ee8df8d8c7db97505aec36f4400225db0ac3369c3e598eb0`，段大小（.text 0x16ac0 / .rodata 0x5e3d0 / .data 0x91c / .bss 0xc000）。原版 v1.0.7 的 SHA256 为 `8e3dbee6513e81e0f1d4f9eaa2ad59b21534117e8560849d309e200556b88ad2`（.text 0x16a20，其余段相同）。

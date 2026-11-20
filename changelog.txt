@@ -1,9 +1,39 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-19
-Build terakhir: quick-sheathe-1.45
+Build terakhir: adept-spirit-roundslash
 
 ============================================================
-PERUBAHAN TERBARU (Quick Sheathe 1.40x -> 1.45x)
+PERUBAHAN TERBARU (Spirit Roundslash native di Adept)
+============================================================
+
+1. Spirit Roundslash sekarang bisa dipakai di Adept Long Sword
+   - Sebelumnya ZR ke-4 setelah Spirit Blade III tidak menghasilkan apa-apa
+     di Adept. Timeline native Adept tidak pernah membuka jendela izin TIML
+     untuk command 39 (ZR) pada source 108, sehingga edge node2 -> node5 di
+     graph tidak pernah terpicu.
+   - c/world_core.h + c/world_adapter.inc: WObservation mendapat field style
+     dari ls_style(a).
+   - c/world_command_driver.inc: cabang khusus style==3 pada node2 (action 26
+     / motion 0x56C) menerima ZR yang baru ditekan dengan syarat gauge >= 25
+     dan tidak ada tombol lain, lalu mengirim native_action=30 langsung.
+     world_route() sengaja tidak dipakai karena menolak node5 saat tidak ada
+     move plugin (Guild sudah memiliki Roundslash native).
+   - Gaya lain (0 Guild, 1 Striker, 2 Aerial, 4 Valor, 5 Alchemy) tidak
+     berubah: tetap memakai jendela izin TIML bawaan. Logika ISS, Foresight,
+     Sakura Slash dan biaya gauge tidak tersentuh.
+   - Cara pakai: Adept, isi gauge, ZR-ZR-ZR lalu ZR lagi; Roundslash keluar
+     tanpa harus menunggu frame 90.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro
+   - Ukuran : 487424 byte
+   - SHA256 : 5b6dda757c361745ee8df8d8c7db97505aec36f4400225db0ac3369c3e598eb0
+   - Baris log yang membuktikan patch:
+     ML_REBUILD: world_native_follow ... 0000001E ...
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+
+============================================================
+PERUBAHAN SEBELUMNYA (Quick Sheathe 1.40x -> 1.45x)
 ============================================================
 
 1. Kecepatan masuk Special Sheathe dengan Quick Sheathe

@@ -538,7 +538,8 @@ static unsigned world_update(void *a,const MLObservation *b)
 #endif
     WObservation o={.base=*b,.state=u16(a,STATE),.previous_weapon_action=u16(a,0x250c),.drawn=byte(a,DRAWN)&1,
         .alive=(int16_t)u16(a,HP)>0,.grounded=!(word(a,AIR)&0x400),
-        .rank=((unsigned (*)(void *))(main_base+0x119ed80))(a),.resources_ready=world_ready(a)};
+        .rank=((unsigned (*)(void *))(main_base+0x119ed80))(a),.resources_ready=world_ready(a),
+        .style=(unsigned)ls_style(a)};
     o.contact=world_contact(a);o.counter=world_counter_seen;
     /* 居合 GP 震动只在反击真的打中怪物时触发一次（counter 与 contact 同时成立）。 */
     if(world.move==W_BIG&&world.counter_success&&world.hit_success){

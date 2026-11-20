@@ -71,10 +71,14 @@ void ml_pad_refresh(void){++sample_sequence;ml_pad_read();}
  * move set itself (private actions240..250 plus the appended motion bank) is
  * style-agnostic, so every style passes here. Out-of-range ids still fail
  * closed instead of trusting a stale style value. */
+static int ls_style(void *a)
+{
+    if(!a||word(a,0)!=main_base+VT||!(word(a,0x13cc)&1))return -1;
+    return ((int (*)(void *))(main_base+0x268818))(a);
+}
 static unsigned local_ls(void *a)
 {
-    if(!a||word(a,0)!=main_base+VT||!(word(a,0x13cc)&1))return 0;
-    int style=((int (*)(void *))(main_base+0x268818))(a);
+    int style=ls_style(a);
     return style>=0&&style<=5;
 }
 #if ML_ANIMATION_PREVIEW || ML_WORLD_COMBAT

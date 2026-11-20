@@ -242,6 +242,34 @@ int main(void)
     for(unsigned f=30;f<90;++f)assert(tick((float)f,0).kind==W_KEEP);
     d=press(90,100,ML_R);
     d=tick(110,0);assert(d.kind==W_NATIVE&&d.native_action==30);
+    /* Adept owns no native frame-90 ZR window in Spirit III. Style3 fires the
+     * same node5 action30 on a fresh ZR immediately; Guild still needs F110. */
+    reset(0);o.style=3;d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
+    assert(tick(60,0).kind==W_KEEP);
+    d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
+    o.counter=1;assert(tick(10,0).rank_delta==1);
+    assert(tick(20,ML_R).kind==W_KEEP);
+    assert(tick(69,0).kind==W_KEEP);
+    d=tick(70+W_ISS_CHORD_GRACE,0);
+    assert(d.kind==W_ENTER&&d.move==W_GROUND&&d.source==124&&s.ground_node==2);
+    bind(d);d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
+    d=tick(4,ML_R);assert(d.kind==W_NATIVE&&d.native_action==30);
+    /* The Adept bypass keeps node5's 25-gauge gate and ignores a held ZR. */
+    reset(0);o.style=3;o.base.gauge=24;d=tick(45,ML_R|ML_B);bind(d);
+    assert(tick(60,0).kind==W_KEEP);
+    d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
+    o.counter=1;assert(tick(10,0).rank_delta==1);
+    assert(tick(20,ML_R).kind==W_KEEP);
+    assert(tick(69,0).kind==W_KEEP);
+    d=tick(70+W_ISS_CHORD_GRACE,0);assert(d.kind==W_ENTER&&d.source==124);bind(d);
+    d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
+    assert(tick(4,ML_R).kind==W_KEEP);
+    /* The actual Adept combo is native (no plugin W_GROUND move): action26 /
+     * motion56C still resolves to node2, so the same bypass applies there. */
+    reset(1);o.style=3;o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
+    d=tick(4,ML_R);assert(d.kind==W_NATIVE&&d.native_action==30);
+    reset(1);o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
+    assert(tick(4,ML_R).kind==W_KEEP); /* Guild keeps the TIML-owned window */
     /* The finisher needs 20 gauge; the Roundslash edge still needs 25. */
     reset(0);o.base.gauge=15;d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);

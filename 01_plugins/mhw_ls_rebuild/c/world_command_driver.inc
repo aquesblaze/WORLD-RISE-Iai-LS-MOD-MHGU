@@ -397,6 +397,19 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
      * Its own TIML command permission still owns both buffering and entry. */
     if(node!=0&&node!=64&&node!=65&&world_property(&query,11))
         return ground_enter(s,o,61,ML_R|ML_B);
+    /* Adept's Spirit III (source108) never opens GU's ZR TIML window, so the
+     * source graph's node2 -> node5 Roundslash edge cannot fire at its normal
+     * frame. Style3 alone accepts a freshly pressed ZR with node5's own gauge
+     * gate and submits its action30 directly. world_route() deliberately
+     * declines node5 when no plugin move is bound (Guild owns it natively),
+     * so the native-Adept case must not go through that helper. Every other
+     * style keeps the TIML-owned permission path unchanged. */
+    if(node==2&&o->style==3&&!s->main_source&&
+       o->base.gauge>=25&&(fresh&ML_R)&&s->controls.buttons[2].edge&&
+       !(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR))){
+        WDecision d=w_leave(s);d.kind=W_NATIVE;d.native_action=30;
+        d.heading=o->base.heading;return d;
+    }
     int next=world_query_node(&query,node);
     if(next>=0){
         WDecision d=world_route(s,o,(unsigned)next);

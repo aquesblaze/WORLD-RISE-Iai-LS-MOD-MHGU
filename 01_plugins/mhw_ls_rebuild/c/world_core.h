@@ -14,7 +14,7 @@ void w_keys_tick(WKeys *keys,const MLObservation *o);
 typedef struct {
     MLObservation base;
     unsigned state,drawn,alive,grounded,rank,contact,counter,resources_ready;
-    unsigned previous_weapon_action;
+    unsigned previous_weapon_action,style;
 } WObservation;
 typedef struct {
     unsigned kind,move,source,slot,native_action,heading;
