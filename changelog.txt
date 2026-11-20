@@ -1,9 +1,31 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: sakura-landing-disabled
+Build terakhir: iss-damage-30-percent
 
 ============================================================
-PERUBAHAN TERBARU (Sakura Slash I setelah Helm Breaker dinonaktifkan)
+PERUBAHAN TERBARU (Damage Iai Spirit Slash dipotong 70%)
+============================================================
+
+1. ISS (W_BIG) hanya mendapat 30% damage native
+   - c/world_core.h: konstanta W_ISS_DAMAGE_SCALE = 0.30f. Bisa dioverride
+     lewat -DW_ISS_DAMAGE_SCALE=<float> saat build.
+   - c/world_adapter.inc: world_attack_scale() mengalikan scale serangan
+     fisik milik ISS dengan konstanta tersebut. Syaratnya sama dengan filter
+     Foresight yang sudah ada: collider dimiliki actor, berada di +0x3020,
+     dan attack ID-nya sama dengan world_attack_id.
+   - Iai kecil (W_SMALL), Helm Breaker, Foresight, dan serangan native lain
+     tidak berubah. Foresight tetap memakai bonus 1.3x seperti sebelumnya.
+   - Kalau yang dimaksud juga Iai kecil, tinggal tambahkan W_SMALL ke syarat
+     di world_attack_scale(); tidak ada perubahan struktur lain.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : 2e6c20eafaf1d33d1f64fb822c20f135b2311aa76ba48bbe8f9135d575972ccd
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+
+============================================================
+PERUBAHAN SEBELUMNYA (Sakura Slash I setelah Helm Breaker dinonaktifkan)
 ============================================================
 
 1. Follow-up Sakura Slash I dimatikan, kode tetap disimpan

@@ -36,6 +36,12 @@ enum { W_ART_SAKURA_SLASH=51, W_ART_SAKURA_SWEEP=54, W_ART_SAKURA_FINISH=62,
  * measured from its own press, so a ZR pressed after F70 still gets the full
  * window. */
 enum { W_ISS_CHORD_GRACE=10 };
+/* Iai Spirit Slash (W_BIG) physical damage scale. 0.30 keeps 30% of the native
+ * hit, i.e. a 70% reduction. Override at build time with
+ * -DW_ISS_DAMAGE_SCALE=<float> if a different balance is wanted. */
+#ifndef W_ISS_DAMAGE_SCALE
+#define W_ISS_DAMAGE_SCALE 0.30f
+#endif
 /* The Helm landing follow-up uses the same idea: a solo ZR waits this many
  * frames before it becomes Sakura Slash, so a late B/A can still complete
  * ZR+B (special sheathe) or ZR+A (Foresight). */

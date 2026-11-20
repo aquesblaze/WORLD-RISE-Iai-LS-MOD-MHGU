@@ -110,9 +110,15 @@ static AttackScale world_original_attack_scale;
 static float __attribute__((pcs("aapcs-vfp"))) world_attack_scale(void *collider)
 {
     float scale=world_original_attack_scale(collider);
-    if(world.move==W_FORESIGHT&&world_attack_owned&&world.foresight_gauge&&
-       (world.counter_success||world_counter_seen)&&
-       (uptr)collider==(uptr)world_attack_actor+0x3020&&u16(collider,0x34)==world_attack_id)
+    unsigned own=world_attack_owned&&
+        (uptr)collider==(uptr)world_attack_actor+0x3020&&
+        u16(collider,0x34)==world_attack_id;
+    /* Iai Spirit Slash only: scale its own owned physical attack down to 30%,
+     * leaving the small Iai, Helm Breaker and every native hit untouched. */
+    if(own&&world.move==W_BIG)
+        scale*=W_ISS_DAMAGE_SCALE;
+    if(own&&world.move==W_FORESIGHT&&world.foresight_gauge&&
+       (world.counter_success||world_counter_seen))
         scale*=1.3f; /* Source wp03_param offset1317, native physical scale. */
     return scale;
 }
