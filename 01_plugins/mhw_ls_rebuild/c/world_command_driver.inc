@@ -24,15 +24,24 @@ static unsigned world_property(WGroundQuery *q,unsigned property)
     if(value)q->values|=bit;
     return value;
 }
-/* Adept Spirit Reckoning is a native-only state: w_guild_source() has no slot
- * for it, so the unowned-state guard below discards every input. Style3 alone
- * maps its observed action/motion pair to the ordinary World ground chords.
+/* These native-only states have no w_guild_source() slot, so the unowned-state
+ * guard below would discard every input. Handle their ZR chords here instead.
  * Adept Cut-In is deliberately NOT here: ZR after Cut-In must remain the plain
  * native Reckoning, with no World move stealing its animation. */
-static unsigned w_adept_reckoning(const WObservation *o)
+static unsigned w_valor_spirit3(const WObservation *o)
 {
-    return o->style==3&&o->grounded&&o->state==16&&
-        o->base.native_action==0x43&&
+    /* Wait for the observed 0x5B9 follow-up pose. The earlier 0x5F0/0x5C2/
+     * 0x5BF frames are the Spirit III cut-in; a fast ZR there must not replace
+     * that animation with Reckoning. */
+    return o->grounded&&o->state==16&&o->base.motion==0x5B9&&
+        (o->base.native_action==W_VALOR_SPIRIT_III||
+         o->base.native_action==W_VALOR_SPIRIT_III_DASH);
+}
+static unsigned w_native_reckoning(const WObservation *o)
+{
+    return o->grounded&&o->state==16&&
+        ((o->style==3&&o->base.native_action==0x43)||
+         o->base.native_action==W_VALOR_RECKONING)&&
         (o->base.motion==0x5B9||o->base.motion==0x5BA);
 }
 static int world_query_node(WGroundQuery *q,unsigned node)
@@ -168,34 +177,44 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
         }
         s->air_sheathe_held=b->held;
     }
-    /* Adept Spirit Reckoning has no World source and no TIML permission bits.
-     * Accept the ordinary ZR chords before the unowned-state guard discards
-     * them, but only for a chord that begins after Reckoning is already up.
-     * A ZR held through Cut-In (which started Reckoning) must not immediately
-     * override that animation with a World move. */
-    unsigned adept_armed=s->adept_r_clear>=2;
-    /* Only a solo ZR resets the arming timer: the ZR that starts Reckoning is
-     * solo, while a later ZR+B/A/X chord must stay armed for its whole hold. */
-    if((b->held&ML_R)&&!(b->held&(ML_B|ML_A|ML_X)))s->adept_r_clear=0;
-    else if(!(b->held&ML_R)&&s->adept_r_clear<3)++s->adept_r_clear;
-    if(!s->move&&w_adept_reckoning(o)){
+    /* Valor Spirit III and both native Reckonings have no World source and no
+     * TIML permission bits. Accept their ZR chords before the unowned-state
+     * guard discards them. The ZR held through the move that started the native
+     * state must not be read as a fresh follow-up. */
+    unsigned native_armed=s->native_r_clear>=2;
+    /* Only a solo ZR resets the arming timer; a later ZR+B/A/X chord stays
+     * armed for its whole hold. */
+    if((b->held&ML_R)&&!(b->held&(ML_B|ML_A|ML_X)))s->native_r_clear=0;
+    else if(!(b->held&ML_R)&&s->native_r_clear<3)++s->native_r_clear;
+    unsigned valor_spirit3=!s->move&&w_valor_spirit3(o);
+    unsigned native_reckoning=!s->move&&w_native_reckoning(o);
+    if(valor_spirit3||native_reckoning){
         unsigned other=b->held&(ML_B|ML_A|ML_X);
         unsigned choice=0;
-        if(adept_armed&&b->animation_frame>=4&&(b->held&ML_R)&&
+        if(native_armed&&b->animation_frame>=4&&(b->held&ML_R)&&
            !(b->held&(ML_Y|ML_ZR))){
             if(other==ML_B)choice=W_SHEATHE;
             else if(other==ML_A)choice=W_FORESIGHT;
             else if(other==ML_X)choice=W_THRUST;
         }
         /* Let the chord mature like the controls VM does, so a button pressed
-         * as part of the native Reckoning animation is not stolen instantly. */
-        if(choice&&choice==s->adept_chord){
-            if(++s->adept_chord_wait>=4){
+         * as part of the native animation is not stolen instantly. */
+        if(choice&&choice==s->native_chord){
+            if(++s->native_chord_wait>=4){
                 unsigned mask=choice==W_SHEATHE?ML_R|ML_B:
                     choice==W_FORESIGHT?ML_R|ML_A:ML_R|ML_X;
                 return enter(s,o,choice,mask);
             }
-        }else{s->adept_chord=choice;s->adept_chord_wait=0;}
+        }else{s->native_chord=choice;s->native_chord_wait=0;}
+        /* A fresh solo ZR on Valor Spirit III requests native Reckoning. Solo
+         * ZR on Reckoning itself stays native and is left to the game. */
+        if(!choice&&valor_spirit3&&native_armed&&b->animation_frame>=4&&
+           (b->held&ML_R)&&!(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR))){
+            WDecision d=w_leave(s);d.kind=W_NATIVE;
+            d.native_action=W_VALOR_RECKONING;
+            d.heading=b->magnitude>=50?b->input_heading:b->heading;
+            return d;
+        }
         s->controls=(WControls){0};s->gu_chord_wait=0;s->adept_round_pending=0;
         return (WDecision){0};
     }
@@ -311,8 +330,18 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
                 solo_ready=s->iss_zr_frame+W_ISS_CHORD_GRACE;
             if((s->follow_ready&1u)&&s->counter_success&&o->base.gauge>=20&&
                frame>=solo_ready&&
-               !(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR)))
-                return ground_enter(s,o,36,ML_R);
+               !(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR))){
+                /* Native Valor Spirit Slash III for every style. With no analog
+                 * direction action0x74 performs the planted cut; with a
+                 * directional analog input action0x87 performs the traveling
+                 * cut. Both leave the World move so the next ZR is native
+                 * Reckoning. */
+                WDecision d=w_leave(s);d.kind=W_NATIVE;
+                d.native_action=b->magnitude>=50?W_VALOR_SPIRIT_III_DASH:
+                    W_VALOR_SPIRIT_III;
+                d.heading=b->magnitude>=50?b->input_heading:b->heading;
+                return d;
+            }
         }
     }
     if(s->move==W_THRUST&&s->hit_success&&o->rank>=1)return enter(s,o,W_RISE,0);

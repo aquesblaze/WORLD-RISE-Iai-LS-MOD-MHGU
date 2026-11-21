@@ -223,53 +223,37 @@ int main(void)
     assert(tick(16,0).kind==W_KEEP);
     assert(tick(69,0).kind==W_KEEP);
     d=tick(70,0);assert(d.kind==W_ENTER&&d.move==W_FORESIGHT);
-    /* A successful ISS can finish with Spirit Blade III through the source's
-     * helper 36 (124 -> 108); node2's own F110 ZR edge gives Roundslash. */
-    reset(0);d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
+    /* The old source-backed Spirit III helper is no longer used after ISS;
+     * the native Valor follow-up tests below own this transition. */
+    /* Spirit III after ISS always uses the native Valor Spirit Slash III. A
+     * stationary ZR uses the planted action; analog direction uses the
+     * traveling action and steers with the sampled input heading. */
+    reset(0);o.base.heading=1000;o.base.input_heading=30000;
+    d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
     assert(tick(60,0).kind==W_KEEP);
     d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
-    o.counter=1;d=tick(10,0);assert(d.rank_delta==1&&!d.gauge_clear);
-    assert(tick(20,ML_R).kind==W_KEEP); /* latched, fired after recovery */
-    assert(tick(69,0).kind==W_KEEP);
+    o.counter=1;assert(tick(10,0).rank_delta==1);
+    assert(tick(20,ML_R).kind==W_KEEP);
     for(unsigned f=70;f<70+W_ISS_CHORD_GRACE;++f)
         assert(tick((float)f,0).kind==W_KEEP);
+    o.base.magnitude=0;o.base.input_heading=30000;
     d=tick(70+W_ISS_CHORD_GRACE,0);
-    assert(d.kind==W_ENTER&&d.move==W_GROUND&&d.source==124&&s.ground_node==2);
-    assert(d.gauge_delta==-20&&s.main_source==108&&!s.counter_success&&!s.hit_success);
-    bind(d);d=tick(21,0);
-    assert(d.kind==W_MOTION&&d.source==108&&d.start==9&&!d.gauge_delta);
-    bind(d);
-    for(unsigned f=30;f<90;++f)assert(tick((float)f,0).kind==W_KEEP);
-    d=press(90,100,ML_R);
-    d=tick(110,0);assert(d.kind==W_NATIVE&&d.native_action==30);
-    /* Adept owns no native frame-90 ZR window in Spirit III. Style3 buffers a
-     * fresh ZR and fires the same node5 action30 only after the ground slash
-     * has landed; an early ZR must not cut the slash short. Guild still needs
-     * its own TIML window (F110). */
-    reset(0);o.style=3;d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
+    assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_SPIRIT_III);
+    assert(d.heading==1000&&!d.gauge_delta&&!s.move);
+    reset(0);o.base.heading=1000;o.base.input_heading=30000;
+    d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);
-    d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
+    d=press_r(65,80);assert(d.move==W_BIG);bind(d);
     o.counter=1;assert(tick(10,0).rank_delta==1);
     assert(tick(20,ML_R).kind==W_KEEP);
-    assert(tick(69,0).kind==W_KEEP);
+    for(unsigned f=70;f<70+W_ISS_CHORD_GRACE;++f)
+        assert(tick((float)f,0).kind==W_KEEP);
+    o.base.magnitude=100;o.base.input_heading=30000;
     d=tick(70+W_ISS_CHORD_GRACE,0);
-    assert(d.kind==W_ENTER&&d.move==W_GROUND&&d.source==124&&s.ground_node==2);
-    bind(d);d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
-    assert(tick(4,ML_R).kind==W_KEEP);
-    assert(tick(90,0).kind==W_KEEP);
-    d=tick(W_ADEPT_ROUNDSLASH_FRAME,0);assert(d.kind==W_NATIVE&&d.native_action==30);
-    /* The Adept bypass keeps node5's 25-gauge gate and ignores a held ZR. */
-    reset(0);o.style=3;o.base.gauge=24;d=tick(45,ML_R|ML_B);bind(d);
-    assert(tick(60,0).kind==W_KEEP);
-    d=press_r(65,80);assert(d.kind==W_ENTER&&d.move==W_BIG);bind(d);
-    o.counter=1;assert(tick(10,0).rank_delta==1);
-    assert(tick(20,ML_R).kind==W_KEEP);
-    assert(tick(69,0).kind==W_KEEP);
-    d=tick(70+W_ISS_CHORD_GRACE,0);assert(d.kind==W_ENTER&&d.source==124);bind(d);
-    d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
-    assert(tick(4,ML_R).kind==W_KEEP);
-    assert(tick(90,0).kind==W_KEEP);
-    assert(tick(W_ADEPT_ROUNDSLASH_FRAME,0).kind==W_KEEP);
+    assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_SPIRIT_III_DASH);
+    assert(d.heading==30000&&!d.gauge_delta&&!s.move);
+    /* Adept ISS now shares the same native Valor Spirit III follow-up; the
+     * style3-only Roundslash bypass still applies to the native combo below. */
     /* The actual Adept combo is native (no plugin W_GROUND move): action26 /
      * motion56C still resolves to node2, so the same buffering applies. */
     reset(1);o.style=3;o.base.gauge=50;o.state=16;o.base.native_action=26;o.base.motion=0x56C;
@@ -323,12 +307,52 @@ int main(void)
     for(unsigned f=13;f<=17;++f)assert(tick((float)f,ML_R|ML_B).kind==W_KEEP);
     for(unsigned f=18;f<=19;++f)assert(tick((float)f,0).kind==W_KEEP);
     d=press(20,24,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+    /* Valor Spirit III is native-only too. A fresh solo ZR requests native
+     * Reckoning; ZR held from the move that started it must not retrigger. */
+    for(unsigned dash=0;dash<2;++dash){
+        reset(1);o.state=16;
+        o.base.native_action=dash?W_VALOR_SPIRIT_III_DASH:W_VALOR_SPIRIT_III;
+        o.base.motion=0x5B9;
+        d=tick(10,ML_R);
+        assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_RECKONING);
+    }
+    /* The earlier cut-in frames must not be cancelled by a fast ZR. */
+    for(unsigned pre=0;pre<2;++pre){
+        reset(1);o.state=16;
+        o.base.native_action=pre?W_VALOR_SPIRIT_III_DASH:W_VALOR_SPIRIT_III;
+        o.base.motion=pre?0x5C2:0x5BF;
+        assert(tick(10,ML_R).kind==W_KEEP);
+    }
+    reset(1);o.state=16;o.base.native_action=W_VALOR_SPIRIT_III;o.base.motion=0x5B9;
+    s.native_r_clear=0; /* ZR is still held from the move that started Spirit III */
+    for(unsigned f=8;f<=12;++f)assert(tick((float)f,ML_R).kind==W_KEEP);
+    for(unsigned f=13;f<=14;++f)assert(tick((float)f,0).kind==W_KEEP);
+    d=tick(15,ML_R);
+    assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_RECKONING);
+    /* Both Valor Spirit III and Valor Reckoning accept the World shortcuts. */
+    for(unsigned phase=0;phase<2;++phase){
+        static const unsigned mots[]={0x5B9,0x5BA};
+        reset(1);o.state=16;o.base.native_action=W_VALOR_SPIRIT_III;o.base.motion=0x5B9;
+        d=press(10,14,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_SPIRIT_III;o.base.motion=0x5B9;
+        d=press(10,14,ML_R|ML_A);assert(d.kind==W_ENTER&&d.move==W_FORESIGHT);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_SPIRIT_III;o.base.motion=0x5B9;
+        d=press(10,14,ML_R|ML_X);assert(d.kind==W_ENTER&&d.move==W_THRUST);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_RECKONING;o.base.motion=mots[phase];
+        assert(press(10,14,ML_R).kind==W_KEEP);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_RECKONING;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_RECKONING;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_A);assert(d.kind==W_ENTER&&d.move==W_FORESIGHT);
+        reset(1);o.state=16;o.base.native_action=W_VALOR_RECKONING;o.base.motion=mots[phase];
+        d=press(10,14,ML_R|ML_X);assert(d.kind==W_ENTER&&d.move==W_THRUST);
+    }
     /* Other styles and unrecognised native moves keep their native path. */
     reset(1);o.state=16;o.base.native_action=0x43;o.base.motion=0x5B9;
     assert(press(10,14,ML_R|ML_B).kind==W_KEEP);
     reset(1);o.style=3;o.state=16;o.base.native_action=0x43;o.base.motion=0x5B9;
     assert(press(10,14,ML_R|ML_Y).kind==W_KEEP);
-    /* The finisher needs 20 gauge; the Roundslash edge still needs 25. */
+    /* The native finisher needs 20 gauge; no source move is entered. */
     reset(0);o.base.gauge=15;d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);
     d=press_r(65,80);assert(d.move==W_BIG);bind(d);
@@ -343,10 +367,9 @@ int main(void)
     assert(tick(20,ML_R).kind==W_KEEP);
     for(unsigned f=70;f<70+W_ISS_CHORD_GRACE;++f)
         assert(tick((float)f,0).kind==W_KEEP);
-    d=tick(70+W_ISS_CHORD_GRACE,0);assert(d.source==124&&d.gauge_delta==-20);bind(d);
-    d=tick(21,0);assert(d.kind==W_MOTION&&d.source==108);bind(d);
-    for(unsigned f=30;f<90;++f)assert(tick((float)f,0).kind==W_KEEP);
-    d=press(90,100,ML_R);assert(tick(110,0).kind==W_KEEP);
+    d=tick(70+W_ISS_CHORD_GRACE,0);
+    assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_SPIRIT_III&&
+           !d.gauge_delta&&!s.move);
     /* A solo ZR tapped before F20 is buffered until the counter is seen. */
     reset(0);d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);
@@ -358,7 +381,7 @@ int main(void)
     for(unsigned f=70;f<70+W_ISS_CHORD_GRACE;++f)
         assert(tick((float)f,0).kind==W_KEEP);
     d=tick(70+W_ISS_CHORD_GRACE,0);
-    assert(d.kind==W_ENTER&&d.source==124&&s.ground_node==2);
+    assert(d.kind==W_NATIVE&&d.native_action==W_VALOR_SPIRIT_III);
     /* The ZR held from entering ISS is not a finisher press. */
     reset(0);d=tick(45,ML_R|ML_B);bind(d);
     assert(tick(60,0).kind==W_KEEP);

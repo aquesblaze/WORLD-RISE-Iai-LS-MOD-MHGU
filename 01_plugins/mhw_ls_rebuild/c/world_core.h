@@ -36,6 +36,11 @@ enum { W_ART_SAKURA_SLASH=51, W_ART_SAKURA_SWEEP=54, W_ART_SAKURA_FINISH=62,
  * measured from its own press, so a ZR pressed after F70 still gets the full
  * window. */
 enum { W_ISS_CHORD_GRACE=10 };
+/* Native Valor Spirit Slash III action ids. Requested directly after a
+ * successful ISS for every style, so the planted/dash follow-up and its native
+ * Reckoning chain are shared instead of using the source-backed Spirit III. */
+enum { W_VALOR_SPIRIT_III=0x74, W_VALOR_SPIRIT_III_DASH=0x87,
+       W_VALOR_RECKONING=0x75 };
 /* Iai Spirit Slash (W_BIG) physical damage scale. 0.30 keeps 30% of the native
  * hit, i.e. a 70% reduction. Override at build time with
  * -DW_ISS_DAMAGE_SCALE=<float> if a different balance is wanted. */
@@ -73,8 +78,8 @@ typedef struct {
     unsigned iss_zr_frame; /* frame the solo-ZR follow-up was latched */
     unsigned land_r_clear; /* samples since ZR was last held; gates the landing follow-up */
     unsigned land_zr_wait; /* landing solo-ZR chord grace countdown */
-    /* Native Adept Spirit Reckoning chords (no World source/TIML window). */
-    unsigned adept_chord,adept_chord_wait,adept_r_clear,adept_round_pending;
+    /* Native-only Spirit III / Reckoning chords (no World source/TIML window). */
+    unsigned native_chord,native_chord_wait,native_r_clear,adept_round_pending;
     /* Sakura Slash I follow-up: 0 off, 1 waiting for the native chain,
      * 2 playing. The native art raises the spirit level; the follow-up turns
      * that into a one-level cost, paid on the frame the chain starts so the

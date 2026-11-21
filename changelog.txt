@@ -1,9 +1,49 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: iss-damage-30-percent
+Build terakhir: valor-spirit-3-cutin-guard
 
 ============================================================
-PERUBAHAN TERBARU (Damage Iai Spirit Slash dipotong 70%)
+PERUBAHAN TERBARU (Valor Spirit III → Reckoning + shortcut World)
+============================================================
+
+1. Follow-up solo ZR setelah ISS dipakai untuk semua style
+   - c/world_core.h: konstanta W_VALOR_SPIRIT_III=0x74,
+     W_VALOR_SPIRIT_III_DASH=0x87, W_VALOR_RECKONING=0x75.
+   - c/world_command_driver.inc: cabang solo ZR setelah ISS tidak lagi memanggil
+     ground_enter(36). Native action 0x74 dipakai kalau analog netral
+     (magnitude < 50); native action 0x87 dipakai kalau analog bergerak
+     (magnitude >= 50) dan heading diambil dari input_heading.
+
+2. ZR setelah Valor Spirit III sekarang memanggil Reckoning sendiri
+   - Native action 0x74/0x87 tidak punya source/TIML untuk merangkai 0x75 di
+     semua style. Driver sekarang mendeteksi state native tersebut dan request
+     W_VALOR_RECKONING (0x75) pada ZR segar setelah R dilepas minimal 2 sample.
+   - Follow-up hanya dibuka pada motion 0x5B9. Frame awal 0x5F0/0x5C2/0x5BF
+     adalah cut-in Spirit III; ZR cepat di frame itu tidak lagi menggantikan
+     animasi cut-in dengan Reckoning.
+   - ZR yang masih tertahan dari move pembuka tidak memicu Reckoning ulang.
+   - Solo ZR di atas Reckoning sendiri tetap native (tidak dicuri World move).
+
+3. Shortcut World di Valor Spirit III dan Reckoning
+   - ZR+B → W_SHEATHE (special sheath)
+   - ZR+A → W_FORESIGHT
+   - ZR+X → W_THRUST (special thrust)
+   - Berlaku untuk action 0x74/0x87 dan 0x75. Chord harus matang 4 frame dan
+     ZR harus dilepas 2 frame sebelum chord baru, sama seperti Reckoning Adept.
+   - Style3 tetap mempertahankan bypass Roundslash khusus untuk combo native
+     action26; Cut-In tidak tersentuh.
+
+4. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : 0705bda81f60de5d6f7617944e91d6695ed7c66874f5ead408ebf61cfcd91681
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+   - Tes C: PASS (Guild ownership, art pass-through, World chord, Iai settled
+     roll, ISS follows, Spirit finish, native return, Valor Spirit III,
+     Reckoning, shortcut chords, cut-in guard).
+
+============================================================
+PERUBAHAN SEBELUMNYA (Damage Iai Spirit Slash dipotong 70%)
 ============================================================
 
 1. ISS (W_BIG) hanya mendapat 30% damage native
