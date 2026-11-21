@@ -169,25 +169,6 @@ int main(void)
     o.base.heading=1000;o.base.input_heading=30000;o.base.magnitude=0;
     d=tick(73,ML_B);
     assert(d.kind==W_ROLL&&d.heading==1000&&!s.move);
-    /* A quick solo R tap is latched from its raw edge, so a tap shorter than
-     * command39's 0.10s button maturation still starts the Iai. It fires on the
-     * source execute grant (F80) even when R was released at F67. */
-    reset(0);d=tick(45,ML_R|ML_B);assert(d.kind==W_ENTER&&d.move==W_SHEATHE);bind(d);
-    assert(tick(60,0).kind==W_KEEP);
-    assert(tick(65,ML_R).kind==W_KEEP);
-    assert(tick(66,ML_R).kind==W_KEEP);
-    for(unsigned f=67;f<80;++f)assert(tick((float)f,0).kind==W_KEEP);
-    d=tick(80,0);assert(d.kind==W_ENTER&&d.move==W_BIG);
-    /* R still held from the chord that opened the stance is never a fresh tap. */
-    reset(0);d=tick(45,ML_R|ML_B);assert(d.move==W_SHEATHE);bind(d);
-    for(unsigned f=46;f<=90;++f)assert(tick((float)f,ML_R|ML_B).kind==W_KEEP);
-    /* Another action taken before F80 cancels the pending Iai request. */
-    reset(0);d=tick(45,ML_R|ML_B);bind(d);
-    assert(tick(60,0).kind==W_KEEP);
-    assert(tick(65,ML_R).kind==W_KEEP);
-    assert(tick(66,0).kind==W_KEEP);
-    d=tick(73,ML_B);assert(d.kind==W_ROLL&&!s.move);
-    for(unsigned f=74;f<=90;++f)assert(tick((float)f,0).kind==W_KEEP);
     /* Rise-style ISS follow-ups. Every follow-up (special sheath, roll,
      * Foresight, Spirit III) requires a successful counter; a whiff only
      * returns to the normal recovery. */

@@ -8,7 +8,7 @@ typedef struct {
 } WFollow;
 static WFollow world_follow[8];
 static unsigned world_follow_captured,world_helm_tier;
-static unsigned world_helm_count,world_helm_hit_sample;
+static unsigned world_helm_count,world_helm_hit_frame;
 static unsigned world_helm_emitted,world_helm_audio_hit;
 #if ML_WORLD_PRESENTATION
 static float world_helm_sound_point[3];

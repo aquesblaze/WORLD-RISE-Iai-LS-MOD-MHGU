@@ -272,9 +272,14 @@ static void world_hit_tick(void *a,const WEvent *e)
     unsigned helm=e->hit==82&&(world.move==W_DOWN||world.move==W_LAND);
     /* Source COL lingering flag/e4 is a1.5-simulation-frame per-target
      * cooldown (12d71b2 ->12d5370 ->12dd59c). Fresh native IDs bypass GU's
-     * once-per-swing ledger; the per-target query enforces that cooldown. */
-    if(world_hit==e->hit&&(!helm||world_helm_hit_sample==sample_sequence))return;
-    if(helm)world_helm_hit_sample=sample_sequence;
+     * once-per-swing ledger; the per-target query enforces that cooldown.
+     * Gate the Helm re-arm on the animation frame, not the engine sample:
+     * during hitstop the action frame is frozen while samples keep coming.
+     * Re-arming there produced repeated contacts in the same frozen pose,
+     * each refreshing hitstop and stranding the diver in mid-air. */
+    unsigned helm_frame=(unsigned)real(a,FRAME);
+    if(world_hit==e->hit&&(!helm||world_helm_hit_frame==helm_frame))return;
+    if(helm)world_helm_hit_frame=helm_frame;
     world_close_hit(a);world_hit=e->hit;
     if(e->hit<0||(helm&&world_helm_count>=7))return;
     const WHit *hit=0;
@@ -325,7 +330,7 @@ static void world_commit(void *a,WDecision d)
 #endif
         if(d.move==W_RISE){
             world_helm_tier=world.rank>3?3:world.rank; /* 蓝刃按红刃 */world_follow_captured=0;
-            world_helm_count=world_helm_hit_sample=world_helm_emitted=0;
+            world_helm_count=world_helm_hit_frame=world_helm_emitted=0;
             world_helm_audio_hit=0;
             for(unsigned i=0;i<7;++i){world_follow[i].live=0;world_follow[i].remaining=0;}
             for(unsigned i=0;i<10;++i)world_primary_cooldown[i].target=0;

@@ -244,7 +244,7 @@ WDecision w_leave(WState *s)
     s->helm_cost_pending=0;
     s->move=s->bound=s->queued=0;s->source=s->slot=0;s->ground_node=s->main_source=0;
     s->follow_ready=s->iss_r_held=s->iss_r_clear=s->iss_b_held=0;
-    s->iss_zr_frame=s->land_zr_wait=0;s->stance_iss_pending=0;
+    s->iss_zr_frame=s->land_zr_wait=0;
     s->native_chord=s->native_chord_wait=s->native_r_clear=s->adept_round_pending=0;return d;
 }
 static WDecision enter(WState *s,const WObservation *o,unsigned move,unsigned mask)

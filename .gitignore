@@ -12,6 +12,9 @@
 log/
 *.log
 
+# Local shareable summary (generated for sharing, not source)
+ringkasan-perubahan.txt
+
 # Python bytecode
 __pycache__/
 *.py[cod]

@@ -83,7 +83,6 @@ typedef struct {
     unsigned counter_success,hit_success,rank_paid,follow_ready;
     unsigned iss_r_held,iss_r_clear,iss_b_held; /* debounce ZR+B vs solo B */
     unsigned iss_zr_frame; /* frame the solo-ZR follow-up was latched */
-    unsigned stance_iss_pending; /* fresh solo R tapped in Iai stance, waiting for its execute window */
     unsigned land_r_clear; /* samples since ZR was last held; gates the landing follow-up */
     unsigned land_zr_wait; /* landing solo-ZR chord grace countdown */
     /* Native-only Spirit III / Reckoning chords (no World source/TIML window). */
