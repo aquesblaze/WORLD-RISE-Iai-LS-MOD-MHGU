@@ -64,6 +64,7 @@ static void world_physics_begin(void *a,unsigned move,unsigned magnitude)
 }
 static void world_physics_tick(void *a)
 {
+    if(world_air_owner(a))world_helm_clear_hitstop(a);
     if(!world_air_owner(a)||!world.move||!world_bound||u16(a,MOTION)!=0x500+world.slot||
        world.actor!=(u32)(uptr)a||world.epoch!=byte(a,AREA))return;
     *(unsigned char *)((uptr)a+0x2505)=2;
@@ -94,5 +95,6 @@ static u32 world_floor(void *a,u32 b,u32 c,u32 d)
     if(!owned)return world_original_floor(a,b,c,d);
     world_physics_tick(a);++world_floor_depth;
     u32 result=world_original_floor(a,b,c,d);
+    world_helm_clear_hitstop(a);
     --world_floor_depth;return result;
 }

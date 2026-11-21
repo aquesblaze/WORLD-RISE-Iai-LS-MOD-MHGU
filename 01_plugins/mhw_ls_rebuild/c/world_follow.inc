@@ -35,13 +35,15 @@ static void world_monster_damage(void *manager,void *attack,void *target,void *p
      * World COL82 is a zero-damage sampler; only its delayed shells hurt.
      * Change the type after native collision filtering, then restore it before
      * returning to that pass. All other attacks retain their native path. */
-    if(!world_primary_helm(attack)){
+    unsigned helm=world_primary_helm(attack);
+    if(!helm){
         world_original_monster_damage(manager,attack,target,point,v1,v2,part,shape);return;
     }
     unsigned type=byte(attack,0x3a);
     *(unsigned char *)((uptr)attack+0x3a)=0x42;
     ((WMonsterDamage)(main_base+0x171350))(manager,attack,target,point,v1,v2,part);
     *(unsigned char *)((uptr)attack+0x3a)=(unsigned char)type;
+    if(helm)world_helm_clear_hitstop((void *)(uptr)world_attack_actor);
 }
 static void (*world_original_shell_position)(void *);
 typedef struct {unsigned shell,request,helm_impact;float until,point[3];} WShellPosition;
@@ -126,6 +128,7 @@ static void world_follow_clear(void)
 #endif
     world_follow_captured=world_helm_tier=0;
     world_helm_count=world_helm_emitted=0;
+    world_helm_hitstop_seen=0;
     for(unsigned i=0;i<10;++i)world_primary_cooldown[i].target=0;
 }
 static void world_follow_capture(void *a)
@@ -223,6 +226,7 @@ static u32 world_monster_query(void *manager,void *attack,void *target)
     if((helm||world.move==W_BIG)&&own&&byte(attack,0xb4)==1&&
        word(attack,0xb0)==(u32)(uptr)target)
         world_follow_capture((void *)(uptr)world.actor);
+        if(helm)world_helm_clear_hitstop((void *)(uptr)world.actor);
     return result;
 }
 static unsigned world_burst(void *a,WFollow *job,const float *point)

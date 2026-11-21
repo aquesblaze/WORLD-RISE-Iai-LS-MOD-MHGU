@@ -1,9 +1,31 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: helm-hitstop-frame-guard
+Build terakhir: helm-hitstop-clear
 
 ============================================================
-PERUBAHAN TERBARU (Helm Breaker tidak macet di udara saat hit)
+PERUBAHAN TERBARU (Hitstop Helm Breaker di udara dinolkan)
+============================================================
+
+1. Hitstop native tidak boleh membekukan W_DOWN
+   - c/world_adapter.inc + c/world_follow.inc + c/world_physics.inc:
+     helper world_helm_clear_hitstop() menimpa pasangan timer hitstop
+     player di +0x27ac/+0x27b0 menjadi 0 selama move W_DOWN masih aktif.
+   - Dipanggil sebelum hitbox dibuka, setelah marker damage type42,
+     saat query kontak primer/shell, dan sebelum/sesudah solver lantai.
+     Jadi hitstop yang muncul setelah collision pass tetap dibersihkan.
+   - Log `world_helm_hitstop_clear` hanya muncul sekali per episode
+     hitstop, membawa nilai sebelum dinolkan (x1000) dan frame animasi.
+   - Gate arming per animation frame dari build 33f1996 tetap dipakai.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 491520 byte
+   - SHA256 : 34ba3f2e7de4edd22caae8da156d84711ecf26646f48b441bc28e089e19d3db4
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+   - Tes C: PASS.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Helm Breaker tidak macet di udara saat hit)
 ============================================================
 
 1. Hitstop Helm Breaker tidak berulang di pose yang sama

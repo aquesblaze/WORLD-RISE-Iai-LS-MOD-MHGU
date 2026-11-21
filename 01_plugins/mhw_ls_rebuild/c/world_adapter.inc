@@ -102,6 +102,24 @@ static int world_hit=-1;
 static unsigned world_attack_id,world_attack_actor,world_attack_owned,world_contact_seen;
 static unsigned world_counter_seen;
 static void set_real(void *a,u32 at,float x){*(float *)((uptr)a+at)=x;}
+static unsigned world_helm_hitstop_seen;
+/* GU stores the hunter's hitstop pair at +0x27ac/+0x27b0. World's COL82
+ * primary is a zero-hitlag sampler, and the regression probe already expects
+ * these timers to stay at zero. In live play native collision can still set
+ * them after the type42 marker pass, which freezes the airborne dive. Clear
+ * them while the owned Helm move is active so the World animation keeps
+ * advancing through every contact. */
+static void world_helm_clear_hitstop(void *a)
+{
+    if(world.move!=W_DOWN)return;
+    float h0=real(a,0x27ac),h1=real(a,0x27b0);
+    if(h0==0&&h1==0){world_helm_hitstop_seen=0;return;}
+    if(!world_helm_hitstop_seen){
+        world_helm_hitstop_seen=1;
+        log_event("world_helm_hitstop_clear",(u32)(uptr)a,(u32)(h0*1000),(u32)(h1*1000),(u32)real(a,FRAME));
+    }
+    set_real(a,0x27ac,0);set_real(a,0x27b0,0);
+}
 #include "world_physics.inc"
 #include "world_rumble.inc"
 static unsigned world_rumble_gp_latch;
@@ -270,6 +288,7 @@ static float world_motion_speed(void *a,const WEvent *e)
 static void world_hit_tick(void *a,const WEvent *e)
 {
     unsigned helm=e->hit==82&&(world.move==W_DOWN||world.move==W_LAND);
+    if(helm)world_helm_clear_hitstop(a);
     /* Source COL lingering flag/e4 is a1.5-simulation-frame per-target
      * cooldown (12d71b2 ->12d5370 ->12dd59c). Fresh native IDs bypass GU's
      * once-per-swing ledger; the per-target query enforces that cooldown.
@@ -331,6 +350,7 @@ static void world_commit(void *a,WDecision d)
         if(d.move==W_RISE){
             world_helm_tier=world.rank>3?3:world.rank; /* 蓝刃按红刃 */world_follow_captured=0;
             world_helm_count=world_helm_hit_frame=world_helm_emitted=0;
+            world_helm_hitstop_seen=0;
             world_helm_audio_hit=0;
             for(unsigned i=0;i<7;++i){world_follow[i].live=0;world_follow[i].remaining=0;}
             for(unsigned i=0;i<10;++i)world_primary_cooldown[i].target=0;
