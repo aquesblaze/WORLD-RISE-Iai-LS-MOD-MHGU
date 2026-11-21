@@ -44,10 +44,16 @@ static inline void w_controls_tick(WControls *s,unsigned actor,unsigned epoch,un
     w_command_conflicts(&s->commands,&s->queries,s->previous_queries);
     for(unsigned i=0;i<5;++i){s->queries.other[i]=s->queries.tested[i];s->queries.tested[i]=0;}
 }
-static inline unsigned w_controls_query(WControls *s,unsigned id,unsigned edge,unsigned mode)
+/* Current primary execute grant for a command, without requiring the button's
+ * 0.10s maturation pulse. Used when a raw tap must be held until its window. */
+static inline unsigned w_controls_execute(const WControls *s,unsigned id)
 {
     int bit=id<137?world_command_bits[id]:-1;
-    unsigned execute=w_permission_bit(s->permission,bit)||w_permission_bit(s->permission,203);
+    return w_permission_bit(s->permission,bit)||w_permission_bit(s->permission,203);
+}
+static inline unsigned w_controls_query(WControls *s,unsigned id,unsigned edge,unsigned mode)
+{
+    unsigned execute=w_controls_execute(s,id);
     return w_command_query(&s->commands,&s->queries,id,
         edge?(mode?W_QUERY_INVERSE_EDGE:W_QUERY_EDGE):W_QUERY_LEVEL,mode,1,execute);
 }

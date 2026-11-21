@@ -26,7 +26,8 @@ static void world_detector_begin(void *a)
 {
     world_detector_clear();
     if(world.move==W_SMALL)world_detector_spawn(a,0,.08f);
-    else if(world.move==W_BIG||(world.move==W_FORESIGHT&&world.foresight_gauge))world_detector_spawn(a,0,.2f);
+    else if(world.move==W_BIG)world_detector_spawn(a,0,W_ISS_COUNTER_WINDOW);
+    else if(world.move==W_FORESIGHT&&world.foresight_gauge)world_detector_spawn(a,0,.2f);
 }
 static void world_detector_tick(void *a,float dt)
 {

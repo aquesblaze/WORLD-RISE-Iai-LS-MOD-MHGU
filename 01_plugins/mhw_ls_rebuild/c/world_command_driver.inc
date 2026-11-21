@@ -268,7 +268,17 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
             d.heading=b->magnitude>=50?b->input_heading:b->heading;
             return d;
         }
-        if((fresh&ML_R)&&w_controls_query(&s->controls,39,1,0))return enter(s,o,W_BIG,ML_R);
+        /* Latch a fresh solo R tap immediately. The raw edge is used instead of
+         * command39's matured pulse, so a tap shorter than the R button's 0.10s
+         * wait is not lost. The source TIML window still decides when the Iai
+         * may start: the latch fires on its execute grant, even if R was
+         * released earlier. R kept from the opening chord is never fresh. */
+        if((fresh&ML_R)&&!(b->held&(ML_B|ML_A|ML_X|ML_Y|ML_ZR)))
+            s->stance_iss_pending=1;
+        if(s->stance_iss_pending&&w_controls_execute(&s->controls,39)){
+            s->stance_iss_pending=0;
+            return enter(s,o,W_BIG,ML_R);
+        }
         if(w_controls_query(&s->controls,25,1,0))return enter(s,o,W_SMALL,ML_X);
         if(s->hold_seconds>=3.5f)return enter(s,o,W_SHEATHE_END,0);
         return (WDecision){0};

@@ -1,9 +1,55 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: valor-spirit-3-cutin-guard
+Build terakhir: iss-counter-window-30
 
 ============================================================
-PERUBAHAN TERBARU (Valor Spirit III → Reckoning + shortcut World)
+PERUBAHAN TERBARU (Window counter ISS diperlebar)
+============================================================
+
+1. Perfect-counter ISS lebih longgar
+   - c/world_core.h: konstanta W_ISS_COUNTER_WINDOW = 0.30f (bisa dioverride
+     lewat -DW_ISS_COUNTER_WINDOW=<float>).
+   - c/world_detector.inc: detector shell W_BIG diperpanjang dari 0.2 detik
+     (12 frame @60fps) menjadi 0.30 detik (18 frame). Iai kecil dan Foresight
+     tetap memakai window bawaan.
+   - Window iframe tidak diubah: tetap mengikuti flag TIML event seperti
+     upstream v1.1. Yang berubah hanya berapa lama serangan masuk dihitung
+     sebagai counter success.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : 96d80f5e10d895962a47fd0306f66550af905b76882fc6ae8198ce8fd0bf2c47
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+   - Tes C: PASS (termasuk tap buffer Iai stance dari build sebelumnya).
+
+============================================================
+PERUBAHAN SEBELUMNYA (ISS lebih responsif dari Iai stance)
+============================================================
+
+1. Tap ZR cepat di Iai stance kini tidak hilang
+   - c/world_core.h + c/world_core.c: WState mendapat stance_iss_pending,
+     di-reset oleh w_leave() (jadi aksi lain membatalkan permintaan).
+   - c/world_controls.h: helper w_controls_execute() membaca grant execute
+     command39 tanpa menunggu maturation tombol R 0.10 detik.
+   - c/world_command_driver.inc: fresh solo R (ZR) langsung di-latch dari raw
+     edge, lalu ISS dijalankan begitu source 306 membuka execute window (F80),
+     walaupun ZR sudah dilepas lebih awal.
+   - ZR yang masih tertahan dari chord pembuka stance tetap tidak memicu ISS.
+     B roll / Iai kecil / akhir stance membatalkan latch.
+
+2. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+   - Ukuran : 487424 byte
+   - SHA256 : eee4c305c8048bfe207bdf7c489364dd316ae95659fa1a7a160be661fccb29e8
+   - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
+   - Tes C: PASS (Guild ownership, art pass-through, World chord, Iai settled
+     roll, ISS follows, Spirit finish, native return, Valor Spirit III,
+     Reckoning, shortcut chords, cut-in guard, Iai tap buffer).
+   - Probe: tap ZR 2 frame dan ZR ditahan sama-sama menghasilkan W_BIG di F80.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Valor Spirit III → Reckoning + shortcut World)
 ============================================================
 
 1. Follow-up solo ZR setelah ISS dipakai untuk semua style

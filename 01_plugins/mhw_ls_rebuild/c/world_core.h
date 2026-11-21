@@ -47,6 +47,13 @@ enum { W_VALOR_SPIRIT_III=0x74, W_VALOR_SPIRIT_III_DASH=0x87,
 #ifndef W_ISS_DAMAGE_SCALE
 #define W_ISS_DAMAGE_SCALE 0.30f
 #endif
+/* Iai Spirit Slash counter-detector lifetime in seconds. The source shell is
+ * 0.2s (12 frames at 60fps); 0.30 widens the perfect-counter window to 18
+ * frames. Override at build time with -DW_ISS_COUNTER_WINDOW=<float>. The
+ * iframe window comes from TIML event flags and is deliberately untouched. */
+#ifndef W_ISS_COUNTER_WINDOW
+#define W_ISS_COUNTER_WINDOW 0.30f
+#endif
 /* The Helm landing follow-up uses the same idea: a solo ZR waits this many
  * frames before it becomes Sakura Slash, so a late B/A can still complete
  * ZR+B (special sheathe) or ZR+A (Foresight). */
@@ -76,6 +83,7 @@ typedef struct {
     unsigned counter_success,hit_success,rank_paid,follow_ready;
     unsigned iss_r_held,iss_r_clear,iss_b_held; /* debounce ZR+B vs solo B */
     unsigned iss_zr_frame; /* frame the solo-ZR follow-up was latched */
+    unsigned stance_iss_pending; /* fresh solo R tapped in Iai stance, waiting for its execute window */
     unsigned land_r_clear; /* samples since ZR was last held; gates the landing follow-up */
     unsigned land_zr_wait; /* landing solo-ZR chord grace countdown */
     /* Native-only Spirit III / Reckoning chords (no World source/TIML window). */
