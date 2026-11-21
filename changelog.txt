@@ -1,9 +1,32 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: helm-hitstop-clear-after-open
+Build terakhir: helm-red-mv-20
 
 ============================================================
-PERUBAHAN TERBARU (Perbandingan versi awal + log 17:33)
+PERUBAHAN TERBARU (Rebalance Helm merah 25 -> 20 MV)
+============================================================
+
+1. Damage per hit Helm Breaker merah diturunkan
+   - c/world_core.h: konstanta W_HELM_RED_MV = 20 (bisa di-override lewat
+     -DW_HELM_RED_MV=<n> saat build).
+   - c/world_follow.inc: tepat setelah attack data diterapkan ke collider,
+     MV 16-bit di +0x38 di-patch hanya untuk shell Helm milik sendiri dengan
+     tier 3 (merah, termasuk Valor blue yang dihitung merah). Patch hanya
+     berlaku bila nilai masih 25, sehingga aman untuk ARC lama maupun ARC
+     yang sudah diregenerasi, dan tidak menyentuh byte 0x3a (attack type).
+   - tools/prepare_combat_arc.py: generator HDP kini menulis 20 untuk source
+     1003/1023, sinkron dengan patch runtime. Tidak ada double scaling.
+   - Putih (10 MV) dan kuning (15 MV) tidak berubah; shell Iai, Foresight
+     counter (x1.3) dan semua serangan native tidak tersentuh.
+
+2. Build dan verifikasi
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (tracked)
+   - Ukuran : 491520 byte
+   - SHA256 : 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Tes C: PASS. py_compile generator: OK. Whitespace check: bersih.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Perbandingan versi awal + log 17:33)
 ============================================================
 
 1. Penyebab hitstop yang tersisa

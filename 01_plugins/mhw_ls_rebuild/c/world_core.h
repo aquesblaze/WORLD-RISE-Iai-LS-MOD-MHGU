@@ -47,6 +47,12 @@ enum { W_VALOR_SPIRIT_III=0x74, W_VALOR_SPIRIT_III_DASH=0x87,
 #ifndef W_ISS_DAMAGE_SCALE
 #define W_ISS_DAMAGE_SCALE 0.30f
 #endif
+/* Red Spirit Helm Breaker motion value per hit. The generated source HDP keeps
+ * World's 25 MV; the plugin patches only owned red Helm shells at dispatch so
+ * no ARC regeneration is needed. Override with -DW_HELM_RED_MV=<n>. */
+#ifndef W_HELM_RED_MV
+#define W_HELM_RED_MV 20u
+#endif
 /* Iai Spirit Slash counter-detector lifetime in seconds. The source shell is
  * 0.2s (12 frames at 60fps); 0.30 widens the perfect-counter window to 18
  * frames. Override at build time with -DW_ISS_COUNTER_WINDOW=<float>. The

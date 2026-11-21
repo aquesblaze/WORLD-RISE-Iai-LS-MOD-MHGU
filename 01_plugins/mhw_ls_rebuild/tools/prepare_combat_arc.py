@@ -109,6 +109,10 @@ def main():
             for key in ids:
                 record=bytearray(template);attack=nodes[key]['attack'];mv=attack['Motion_Value']
                 if int(mv)!=mv:raise ValueError('Fractional source MV needs native scaling')
+                # Red Helm rebalance: 25 -> 20 MV per hit. The plugin also
+                # patches the live collider only while it still reads 25, so
+                # an older deployed ARC and a regenerated one agree.
+                if key in (1003,1023):mv=20
                 struct.pack_into('<HHI',record,0,0,1,int(mv));struct.pack_into('<I',record,48,int(mv))
                 # Native368960 transfers these to collider94/98; element/status
                 # scaling uses94 (374b48/3781c4), monster reaction uses98->142c.

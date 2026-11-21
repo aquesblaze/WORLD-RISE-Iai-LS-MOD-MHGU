@@ -297,6 +297,12 @@ static unsigned world_burst(void *a,WFollow *job,const float *point)
     void *collider=(void *)((uptr)shell+0x13a8);
     ((void (*)(void *,void *,void *,u32,u32,u32))(main_base+0x2b7520))(a,shell,collider,1,hit,0);
     put(collider,0x88,shape);
+    /* Red Helm rebalance: source MV is 25 per hit, use 20 instead. Patch the
+     * 16-bit collider MV only while it still holds the source value, so an ARC
+     * regenerated with the rebalance stays unchanged and every other tier and
+     * native attack is untouched. Byte 0x3a (attack type) must not be written. */
+    if(job->kind==1&&job->tier==3&&u16(collider,0x38)==25u)
+        *(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_RED_MV;
     /* Native3798cc skips hit visuals for effect ID0. Both source Helm and
      * delayed Iai SHLPs bind EPV2006/0; Sakura45 would duplicate that flash. */
     /* 公会太刀 kept the native shell hit visual; it is the old hit flash. */
