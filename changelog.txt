@@ -1,31 +1,41 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-21
-Build terakhir: helm-hitstop-clear
+Build terakhir: helm-hitstop-clear-after-open
 
 ============================================================
-PERUBAHAN TERBARU (Hitstop Helm Breaker di udara dinolkan)
+PERUBAHAN TERBARU (Perbandingan versi awal + log 17:33)
 ============================================================
 
-1. Hitstop native tidak boleh membekukan W_DOWN
-   - c/world_adapter.inc + c/world_follow.inc + c/world_physics.inc:
-     helper world_helm_clear_hitstop() menimpa pasangan timer hitstop
-     player di +0x27ac/+0x27b0 menjadi 0 selama move W_DOWN masih aktif.
-   - Dipanggil sebelum hitbox dibuka, setelah marker damage type42,
-     saat query kontak primer/shell, dan sebelum/sesudah solver lantai.
-     Jadi hitstop yang muncul setelah collision pass tetap dibersihkan.
-   - Log `world_helm_hitstop_clear` hanya muncul sekali per episode
-     hitstop, membawa nilai sebelum dinolkan (x1000) dan frame animasi.
-   - Gate arming per animation frame dari build 33f1996 tetap dipakai.
+1. Penyebab hitstop yang tersisa
+   - Versi awal dan versi sekarang sama-sama memanggil 0x2b7240 saat
+     membuka hit 98 (source COL82). Pembersih hitstop sebelumnya dipanggil
+     SEBELUM panggilan itu, sehingga timer +0x27ac/+0x27b0 langsung terisi
+     lagi (log menunjukkan 8.0 / 12.0 frame) pada kontak berikutnya.
+   - Log terbaru juga menunjukkan transisi W_DOWN -> W_LAND di frame 6.
+     Setelah transisi itu helper lama berhenti bekerja, padahal 7 shell
+     delayed Helm baru saja mulai mengenai monster (hit 0x63/0x68/0x5B).
+   - Gate arming per animation frame dari 33f1996 tetap dipertahankan.
 
-2. Build
-   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (generated locally, not tracked)
+2. Perbaikan
+   - c/world_adapter.inc: world_helm_clear_hitstop() dipindah ke SETELAH
+     panggilan 0x2b7240, jadi timer yang diisi hitbox-open langsung nol.
+   - c/world_follow.inc: world_helm_active() kini mencakup W_DOWN, W_LAND,
+     dan selama job shell Helm masih live. Damage callback untuk shell
+     milik sendiri juga ikut membersihkan hitstop.
+   - c/world_physics.inc: pembersih memakai world_helm_active(), bukan
+     hanya world_air_owner(), sehingga tetap aktif saat mendarat.
+   - Log `world_helm_hitstop_clear` tetap dipakai; nilai yang tercatat
+     adalah timer sebelum dinolkan (x1000) dan frame animasi.
+
+3. Build
+   - File   : 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro (tracked)
    - Ukuran : 491520 byte
-   - SHA256 : 34ba3f2e7de4edd22caae8da156d84711ecf26646f48b441bc28e089e19d3db4
+   - SHA256 : cf9069bd59fbd2a309f9fb09d54286696a34cee9d7c5d096c7fcaf8b2c69c6c5
    - Flag build: ML_WORLD_COMBAT=1 ML_WORLD_INPUT_VM=1 ML_WORLD_PRESENTATION=1
    - Tes C: PASS.
 
 ============================================================
-PERUBAHAN SEBELUMNYA (Helm Breaker tidak macet di udara saat hit)
+PERUBAHAN SEBELUMNYA (Hitstop Helm Breaker di udara dinolkan)
 ============================================================
 
 1. Hitstop Helm Breaker tidak berulang di pose yang sama

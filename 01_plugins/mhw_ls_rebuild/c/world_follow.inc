@@ -7,6 +7,16 @@ typedef struct {
     int bone;float point[3],remaining,age;
 } WFollow;
 static WFollow world_follow[8];
+/* Keep suppressing hitstop after the dive becomes W_LAND, while any Helm
+ * shell is still travelling or pending. */
+static unsigned world_helm_active(void *a)
+{
+    if(world.actor&&a&&(u32)(uptr)a!=world.actor)return 0;
+    if(world.move==W_DOWN||world.move==W_LAND)return 1;
+    for(unsigned i=0;i<8;++i)
+        if(world_follow[i].live&&world_follow[i].kind==1)return 1;
+    return 0;
+}
 static unsigned world_follow_captured,world_helm_tier;
 static unsigned world_helm_count,world_helm_hit_frame;
 static unsigned world_helm_emitted,world_helm_audio_hit;
@@ -22,6 +32,7 @@ static float world_elapsed;
 static u32 (*world_original_monster_query)(void *,void *,void *);
 typedef void (*WMonsterDamage)(void *,void *,void *,void *,void *,void *,void *);
 static void (*world_original_monster_damage)(void *,void *,void *,void *,void *,void *,void *,void *);
+static unsigned world_owned_shell_attack(void *attack);
 static unsigned world_primary_helm(void *attack)
 {
     return world_attack_owned&&(uptr)attack==(uptr)world_attack_actor+0x3020&&
@@ -37,7 +48,12 @@ static void world_monster_damage(void *manager,void *attack,void *target,void *p
      * returning to that pass. All other attacks retain their native path. */
     unsigned helm=world_primary_helm(attack);
     if(!helm){
-        world_original_monster_damage(manager,attack,target,point,v1,v2,part,shape);return;
+        world_original_monster_damage(manager,attack,target,point,v1,v2,part,shape);
+        /* Delayed Helm shells use real GU attacks, so their hit callback can
+         * set hitstop after the W_LAND transition. Clear it too. */
+        if(world.actor&&world_owned_shell_attack(attack))
+            world_helm_clear_hitstop((void *)(uptr)world.actor);
+        return;
     }
     unsigned type=byte(attack,0x3a);
     *(unsigned char *)((uptr)attack+0x3a)=0x42;
@@ -48,6 +64,14 @@ static void world_monster_damage(void *manager,void *attack,void *target,void *p
 static void (*world_original_shell_position)(void *);
 typedef struct {unsigned shell,request,helm_impact;float until,point[3];} WShellPosition;
 static WShellPosition world_shell_positions[32];
+static unsigned world_owned_shell_attack(void *attack)
+{
+    for(unsigned i=0;i<32;++i){
+        WShellPosition *p=world_shell_positions+i;
+        if(p->shell&&p->until>=world_elapsed&&p->shell+0x13a8==(u32)(uptr)attack)return 1;
+    }
+    return 0;
+}
 static void world_shell_position(void *shell)
 {
     for(unsigned i=0;i<32;++i){
@@ -226,7 +250,8 @@ static u32 world_monster_query(void *manager,void *attack,void *target)
     if((helm||world.move==W_BIG)&&own&&byte(attack,0xb4)==1&&
        word(attack,0xb0)==(u32)(uptr)target)
         world_follow_capture((void *)(uptr)world.actor);
-        if(helm)world_helm_clear_hitstop((void *)(uptr)world.actor);
+    if(world.actor&&world_helm_active((void *)(uptr)world.actor))
+        world_helm_clear_hitstop((void *)(uptr)world.actor);
     return result;
 }
 static unsigned world_burst(void *a,WFollow *job,const float *point)

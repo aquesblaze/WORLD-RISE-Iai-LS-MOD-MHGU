@@ -103,15 +103,15 @@ static unsigned world_attack_id,world_attack_actor,world_attack_owned,world_cont
 static unsigned world_counter_seen;
 static void set_real(void *a,u32 at,float x){*(float *)((uptr)a+at)=x;}
 static unsigned world_helm_hitstop_seen;
-/* GU stores the hunter's hitstop pair at +0x27ac/+0x27b0. World's COL82
- * primary is a zero-hitlag sampler, and the regression probe already expects
- * these timers to stay at zero. In live play native collision can still set
- * them after the type42 marker pass, which freezes the airborne dive. Clear
- * them while the owned Helm move is active so the World animation keeps
- * advancing through every contact. */
+static unsigned world_helm_active(void *a);
+/* GU stores the hunter's hitstop pair at +0x27ac/+0x27b0. The old probe
+ * expected these to stay zero on COL82 contacts; live logs show each hit
+ * re-arming one of them (8 or 12 frames), so the previous clear placed before
+ * the hitbox-open call was immediately undone. Clear them after every owned
+ * Helm contact, including the delayed shells after the W_LAND transition. */
 static void world_helm_clear_hitstop(void *a)
 {
-    if(world.move!=W_DOWN)return;
+    if(!world_helm_active(a))return;
     float h0=real(a,0x27ac),h1=real(a,0x27b0);
     if(h0==0&&h1==0){world_helm_hitstop_seen=0;return;}
     if(!world_helm_hitstop_seen){
@@ -288,7 +288,6 @@ static float world_motion_speed(void *a,const WEvent *e)
 static void world_hit_tick(void *a,const WEvent *e)
 {
     unsigned helm=e->hit==82&&(world.move==W_DOWN||world.move==W_LAND);
-    if(helm)world_helm_clear_hitstop(a);
     /* Source COL lingering flag/e4 is a1.5-simulation-frame per-target
      * cooldown (12d71b2 ->12d5370 ->12dd59c). Fresh native IDs bypass GU's
      * once-per-swing ledger; the per-target query enforces that cooldown.
@@ -306,6 +305,9 @@ static void world_hit_tick(void *a,const WEvent *e)
         if(world_hits[i].source==(unsigned)e->hit){hit=world_hits+i;break;}
     if(!hit)return;
     ((void (*)(void *,u32,u32,u32))(main_base+0x2b7240))(a,0,hit->hit,0);
+    /* This call re-arms GU hitstop from the re-opened attack; clear only
+     * after it, otherwise the timer survives until the next sample. */
+    if(helm)world_helm_clear_hitstop(a);
     world_attack_id=u16(a,0x3054);world_attack_actor=(u32)(uptr)a;world_attack_owned=1;
     put(a,0x30a8,hit->shape);
 #if ML_WORLD_PRESENTATION

@@ -64,7 +64,7 @@ static void world_physics_begin(void *a,unsigned move,unsigned magnitude)
 }
 static void world_physics_tick(void *a)
 {
-    if(world_air_owner(a))world_helm_clear_hitstop(a);
+    if(world_helm_active(a))world_helm_clear_hitstop(a);
     if(!world_air_owner(a)||!world.move||!world_bound||u16(a,MOTION)!=0x500+world.slot||
        world.actor!=(u32)(uptr)a||world.epoch!=byte(a,AREA))return;
     *(unsigned char *)((uptr)a+0x2505)=2;
