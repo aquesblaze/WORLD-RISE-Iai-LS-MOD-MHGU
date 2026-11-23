@@ -20,7 +20,7 @@ static void world_sfx_oriented(void *a,const float *point,unsigned uid,const flo
     put(request,20,word(request,20)|1);
     for(unsigned k=0;k<3;++k)set_real(request,32+4*k,point[k]);put(request,44,0);
     unsigned counter_line=uid==0x3f6b||uid==0x3f70||uid==0x3f71||uid==0x3fc3||uid==0x3fc4;
-    unsigned line=uid==0x3f64||counter_line||blade;
+    unsigned line=uid==0x3f64||uid==0x3f6c||counter_line||blade;
     if(line){
         put(request,20,word(request,20)|2);
         unsigned yaw=counter_line?((world.heading+6007u)&65535u):u16(a,HEADING);

@@ -52,6 +52,20 @@ static void world_big_fx_tick(void *a,float frame)
         world_sfx_seen|=8;
         if(world_joint47(a,point))for(unsigned uid=0x3f66;uid<=0x3f68;++uid)world_sfx_emit(a,point,uid);
     }
+    /* Native GU spirit roundslash: cm121_071 (PEL 0x3f6c), the roundslash the
+     * native w07 spirit-art PSL binds to its slash motion. One shot on a
+     * successful ISS at the follow-up-ready pose (~F70). */
+    if(world.counter_success&&frame>=70&&!(world_sfx_seen&(1u<<20))){
+        world_sfx_seen|=1u<<20;
+        /* Flat horizontal roundslash at hunter position: no blade matrix, no
+         * elevation/roll, only hunter heading yaw. Slightly lowered to sit at
+         * the ISS slash height. */
+        float rp[3];
+        for(unsigned k=0;k<3;++k)rp[k]=real(a,0x40+4*k);
+        rp[1]-=20.0f;
+        world_sfx_emit(a,rp,0x3f6c);
+        log_event("world_native_roundslash",(u32)(uptr)a,0x3f6c,(u32)(frame*1000),0);
+    }
     /* World training footage: the second streak crosses the finish of the
      * dash as the hunter turns. Its long axis stays in the scene.
      * EFL submits ahead of presentation: capture shows ~4 motion frames
