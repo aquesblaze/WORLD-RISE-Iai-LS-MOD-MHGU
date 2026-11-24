@@ -661,6 +661,10 @@ static unsigned world_update(void *a,const MLObservation *b)
         put(a,HEADING,facing);put(a,TARGET,facing);o.base.heading=facing;
     }
     WDecision d=w_step(&world,&o);
+    /* Spirit Thrust only enters W_RISE after its hit lands, so this edge marks
+     * a successful launch into the Spirit Helm Breaker. */
+    if(world_lens_prev_move==W_THRUST&&world.move==W_RISE)world_lens_helm_start(a);
+    world_lens_prev_move=world.move;
     /* Track the Sakura cost state machine so a swallowed charge is visible in
      * the log. The packed field is drawn<<16 | ready<<8 | grace. */
     static unsigned sakura_seen;
