@@ -6,12 +6,15 @@ static int world_sfx_hit;
 static float world_sfx_origin[3];
 /* 公会太刀 helm stroke bookkeeping, restored with the old hit flash. */
 static unsigned world_helm_line_pending,world_helm_tail_pending;
+/* ISS roundslash: schedule on damage hit, emit after F70-equivalent delay. */
+static unsigned world_roundslash_pending;
+static float world_roundslash_due;
 static unsigned world_sfx_path(const char *a,const char *b)
 {
     for(unsigned i=0;i<64;++i){char c=a[i]=='\\'?'/':a[i];if(c!=b[i])return 0;if(!c)return 1;}
     return 0;
 }
-static void world_fx_begin(void *a){(void)a;world_sfx_seen=0;world_sfx_hit=-1;world_helm_tail_pending=0;if(world.move!=W_LAND)world_helm_line_pending=0;}
+static void world_fx_begin(void *a){(void)a;world_sfx_seen=0;world_sfx_hit=-1;world_helm_tail_pending=0;world_roundslash_pending=0;if(world.move!=W_LAND)world_helm_line_pending=0;}
 static void world_sfx_oriented(void *a,const float *point,unsigned uid,const float *blade)
 {
     if(!world_sfx_ready||*(void **)(main_base+0x18509e8)!=world_sfx_manager)return;

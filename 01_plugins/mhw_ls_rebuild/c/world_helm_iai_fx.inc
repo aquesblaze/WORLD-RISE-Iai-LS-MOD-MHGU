@@ -39,17 +39,23 @@ static void world_fx_hit(void *a,const float *point,unsigned ordinal)
 {world_sfx_emit(a,point,0x3f61+ordinal%3);}
 static void world_big_fx_tick(void *a,float frame)
 {
-    if(world.move!=W_BIG)return;
-    float point[3];
-    /* Native GU spirit roundslash: cm121_072 (PEL 0x3f6c). One shot on a
-     * successful ISS only when the slash actually hits the monster, at the
-     * follow-up-ready pose (~F70). Old World ISS effects removed. */
-    if(world.counter_success&&world.hit_success&&frame>=70&&!(world_sfx_seen&(1u<<20))){
+    /* Fire pending roundslash even if move already transitioned past W_BIG. */
+    if(world_roundslash_pending&&!(world_sfx_seen&(1u<<20))&&world_elapsed>=world_roundslash_due){
         world_sfx_seen|=1u<<20;
+        world_roundslash_pending=0;
         float rp[3];
         for(unsigned k=0;k<3;++k)rp[k]=real(a,0x40+4*k);
         rp[1]-=30.0f;
         world_sfx_emit(a,rp,0x3f6c);
         log_event("world_native_roundslash",(u32)(uptr)a,0x3f6c,(u32)(frame*1000),0);
+    }
+    if(world.move!=W_BIG)return;
+    /* Native GU spirit roundslash: cm121_072 (PEL 0x3f6c). Schedule on ISS
+     * counter+hit damage, then emit after delay so it appears at ~F70. */
+    if(world.counter_success&&world.hit_success&&!world_roundslash_pending&&!(world_sfx_seen&(1u<<20))){
+        world_roundslash_pending=1;
+        float delay=(70.0f-frame)/60.0f;
+        if(delay<0)delay=0;
+        world_roundslash_due=world_elapsed+delay;
     }
 }

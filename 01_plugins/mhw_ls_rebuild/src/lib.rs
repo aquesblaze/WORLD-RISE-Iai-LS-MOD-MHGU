@@ -131,7 +131,8 @@ fn draw_gauge_glow() {
     if value == 0 { return; }
     let size = context::get_io().DisplaySize;
     let scale = (size.x / 640.0).min(size.y / 360.0);
-    let left = (size.x - 640.0 * scale) * 0.5;
+    let wide = size.x / size.y > 16.0 / 9.0 + 0.01;
+    let left = if wide { 0.0 } else { (size.x - 640.0 * scale) * 0.5 };
     let top = (size.y - 360.0 * scale) * 0.5;
     let width = 48.0 * (value >> 8) as f32 / 100.0;
     let dl = DrawList::foreground();
