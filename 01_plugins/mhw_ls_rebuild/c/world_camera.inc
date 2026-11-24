@@ -12,6 +12,31 @@ static unsigned world_camera_origin[2];
 static int world_camera_delta[2];
 static float world_camera_age,world_camera_duration;
 
+/* ISS success camera pull-back: widen the lens from the first counter hit
+ * until the native roundslash effect is gone, then ease back to the resting
+ * FOV. The lens is the only camera field GU preserves after its own update. */
+#define ML_WORLD_ISS_ZOOM_DEG 14.0f
+static unsigned world_lens_iss_active,world_lens_iss_spawned;
+static unsigned world_lens_iss_actor,world_lens_iss_epoch;
+static float world_lens_iss_zoom,world_lens_iss_last_live,world_lens_iss_deadline;
+static float world_lens_iss_tick;
+static void world_lens_iss_start(void *a)
+{
+    world_lens_iss_active=1;world_lens_iss_spawned=0;
+    world_lens_iss_actor=(u32)(uptr)a;world_lens_iss_epoch=byte(a,AREA);
+    world_lens_iss_last_live=world_elapsed;
+    world_lens_iss_deadline=world_elapsed+4.0f;
+    log_event("world_iss_zoom_start",(u32)(uptr)a,0,0,0);
+}
+static void world_lens_iss_spawn(void)
+{
+    world_lens_iss_spawned=1;
+    /* Fallback if the particle hook cannot observe the effect. */
+    world_lens_iss_deadline=world_elapsed+1.8f;
+    log_event("world_iss_zoom_spawn",(u32)world_lens_iss_actor,0,0,0);
+}
+static void world_lens_iss_alive(void){world_lens_iss_last_live=world_elapsed;}
+
 static unsigned world_direction(float x,float z)
 {
     float ax=x<0?-x:x,az=z<0?-z:z;
@@ -126,9 +151,37 @@ static void world_camera(void *camera)
     static float lens_rest=50.0f,lens_last;
     static unsigned lens_stable,lens_tail;
     float lens_fov=real(camera,0x3c);
+    /* Only the player actor that started the ISS counter owns the zoom. */
+    unsigned iss_owner=world_lens_iss_active&&is_ls&&
+        world_lens_iss_actor==(u32)(uptr)a&&world_lens_iss_epoch==byte(a,AREA);
+    if(world_lens_iss_active&&!iss_owner)world_lens_iss_active=0;
+    if(iss_owner){
+        if(world_lens_iss_spawned){
+            if(world_elapsed-world_lens_iss_last_live>0.10f)world_lens_iss_active=0;
+        }else if(world_elapsed>world_lens_iss_deadline)world_lens_iss_active=0;
+        if(world_elapsed>world_lens_iss_deadline+2.0f)world_lens_iss_active=0;
+    }
+    /* Advance the ease once per simulation frame even if the camera hook is
+     * called more than once. */
+    if(world_lens_iss_tick!=world_elapsed){
+        world_lens_iss_tick=world_elapsed;
+        float dt=real(a,0x1c)/60;
+        if(!(dt>0&&dt<.5f))dt=1.0f/60;
+        float target=world_lens_iss_active&&iss_owner?1.0f:0.0f;
+        if(target>world_lens_iss_zoom){
+            world_lens_iss_zoom+=dt/0.50f;
+            if(world_lens_iss_zoom>target)world_lens_iss_zoom=target;
+        }else{
+            world_lens_iss_zoom-=dt/0.80f;
+            if(world_lens_iss_zoom<target)world_lens_iss_zoom=target;
+        }
+    }
+    unsigned lens_zoom=world_lens_iss_zoom>0.0005f;
     if(lens_own)lens_tail=110;
     else if(lens_tail)--lens_tail;
-    if(lens_own||lens_tail){
+    if(lens_zoom){
+        set_real(camera,0x3c,lens_rest+ML_WORLD_ISS_ZOOM_DEG*world_lens_iss_zoom);
+    }else if(lens_own||lens_tail){
         set_real(camera,0x3c,lens_rest);
     }else if(lens_fov>20&&lens_fov<100){
         float d=lens_fov-lens_last;if(d<0)d=-d;

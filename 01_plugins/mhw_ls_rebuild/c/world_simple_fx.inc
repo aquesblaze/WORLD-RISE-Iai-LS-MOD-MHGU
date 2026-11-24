@@ -9,6 +9,8 @@ static unsigned world_helm_line_pending,world_helm_tail_pending;
 /* ISS roundslash: schedule on damage hit, emit after F70-equivalent delay. */
 static unsigned world_roundslash_pending;
 static float world_roundslash_due;
+/* Live effect tracked so the ISS camera pull-back can end with the slash. */
+static unsigned world_roundslash_effect,world_roundslash_res;
 static unsigned world_sfx_path(const char *a,const char *b)
 {
     for(unsigned i=0;i<64;++i){char c=a[i]=='\\'?'/':a[i];if(c!=b[i])return 0;if(!c)return 1;}
@@ -43,6 +45,11 @@ static void world_sfx_oriented(void *a,const float *point,unsigned uid,const flo
         (a,world_sfx_handle,2,uid,request,word(a,0x3310));
     world_last_effect=(u32)effect;
     if(uid>=0x3f61&&uid<=0x3f63)world_last_hit_effect=(u32)effect;
+    if(uid==0x3f6c){
+        world_roundslash_effect=(u32)(uptr)effect;
+        world_roundslash_res=effect?word((void *)(uptr)effect,244):0;
+        world_lens_iss_spawn();
+    }
     ((void (*)(void *))(main_base+0x40b50))(request);
     log_event("world_simple_fx_emit",(u32)(uptr)a,uid,world.source,effect!=0);
     if(uid==0x3f64||uid==0x3f6b||uid==0x3f70||uid==0x3f71)
@@ -62,8 +69,13 @@ static int (*world_original_poly)(void *);
 static int world_poly_update(void *g)
 {
     int live=world_original_poly(g);
+    void *effect=(void *)(uptr)word(g,8);
+    if(effect&&(u32)(uptr)effect==world_roundslash_effect){
+        unsigned res=word(effect,244);
+        if(res&&res==world_roundslash_res)world_lens_iss_alive();
+    }
     if(!live||!world_bound)return live;
-    void *effect=(void *)(uptr)word(g,8),*particle=(void *)(uptr)word(g,176);
+    void *particle=(void *)(uptr)word(g,176);
     if(!effect||!particle)return live;
     unsigned res=word(effect,244);
     if(!res)return live;

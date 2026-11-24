@@ -54,6 +54,7 @@ static void world_big_fx_tick(void *a,float frame)
      * counter+hit damage, then emit after delay so it appears at ~F70. */
     if(world.counter_success&&world.hit_success&&!world_roundslash_pending&&!(world_sfx_seen&(1u<<20))){
         world_roundslash_pending=1;
+        world_lens_iss_start(a);
         float delay=(70.0f-frame)/60.0f;
         if(delay<0)delay=0;
         world_roundslash_due=world_elapsed+delay;
