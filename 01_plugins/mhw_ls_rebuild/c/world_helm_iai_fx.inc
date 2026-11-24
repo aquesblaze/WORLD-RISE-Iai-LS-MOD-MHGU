@@ -41,60 +41,15 @@ static void world_big_fx_tick(void *a,float frame)
 {
     if(world.move!=W_BIG)return;
     float point[3];
-    if(frame>=(world.source==308||world.source==310?10:12)&&!(world_sfx_seen&4)){
-        world_sfx_seen|=4;
-        if(world_joint47(a,point)){
-            world_sfx_emit(a,point,0x3f64);
-            world_sfx_emit(a,point,0x3f65);
-        }
-    }
-    if(world.counter_success&&frame>=12&&!(world_sfx_seen&8)){
-        world_sfx_seen|=8;
-        if(world_joint47(a,point))for(unsigned uid=0x3f66;uid<=0x3f68;++uid)world_sfx_emit(a,point,uid);
-    }
-    /* Native GU spirit roundslash: cm121_071 (PEL 0x3f6c), the roundslash the
-     * native w07 spirit-art PSL binds to its slash motion. One shot on a
-     * successful ISS at the follow-up-ready pose (~F70). */
-    if(world.counter_success&&frame>=70&&!(world_sfx_seen&(1u<<20))){
+    /* Native GU spirit roundslash: cm121_072 (PEL 0x3f6c). One shot on a
+     * successful ISS only when the slash actually hits the monster, at the
+     * follow-up-ready pose (~F70). Old World ISS effects removed. */
+    if(world.counter_success&&world.hit_success&&frame>=70&&!(world_sfx_seen&(1u<<20))){
         world_sfx_seen|=1u<<20;
-        /* Flat horizontal roundslash at hunter position: no blade matrix, no
-         * elevation/roll, only hunter heading yaw. Slightly lowered to sit at
-         * the ISS slash height. */
         float rp[3];
         for(unsigned k=0;k<3;++k)rp[k]=real(a,0x40+4*k);
-        rp[1]-=20.0f;
+        rp[1]-=30.0f;
         world_sfx_emit(a,rp,0x3f6c);
         log_event("world_native_roundslash",(u32)(uptr)a,0x3f6c,(u32)(frame*1000),0);
-    }
-    /* World training footage: the second streak crosses the finish of the
-     * dash as the hunter turns. Its long axis stays in the scene.
-     * EFL submits ahead of presentation: capture shows ~4 motion frames
-     * from requesting the first particle to its first visible pixels.
-     * The second stroke uses entry rank, including a complete whiff. */
-    if(world.rank&&frame>=(world.rank==2?50:52)){
-        unsigned white=world.rank==1;
-        if(!(world_sfx_seen&(1u<<5))){
-            for(unsigned k=0;k<3;++k)world_sfx_origin[k]=real(a,0x40+4*k);
-            world_sfx_origin[1]+=83;
-            world_sfx_seen|=1u<<5;
-            world_sfx_emit(a,world_sfx_origin,white?0x3f6b:(world.rank==3?0x3f71:0x3f70));
-            world_sfx_emit(a,world_sfx_origin,white?0x3f7c:0x3f7d);
-            world_sfx_emit(a,world_sfx_origin,white?0x3f75:0x3f77);
-            if(!white){world_sfx_emit(a,world_sfx_origin,0x3f78);world_sfx_emit(a,world_sfx_origin,0x3f79);}
-        }
-        if(frame>=73&&!(world_sfx_seen&(1u<<19))){
-            world_sfx_seen|=1u<<19;
-            for(unsigned i=0;i<12;++i)world_sfx_emit(a,world_sfx_origin,0x3f90+12*(world.rank-1)+i);
-        }
-        if(frame>=54&&!(world_sfx_seen&(1u<<10))){
-            world_sfx_seen|=1u<<10;
-            world_sfx_emit(a,world_sfx_origin,white?0x3f76:0x3f7a);
-            if(!white)world_sfx_emit(a,world_sfx_origin,0x3f7b);
-        }
-    }
-    if(world.counter_success&&world.rank==1&&
-       (world_sfx_seen&(1u<<5))&&frame>=61&&!(world_sfx_seen&(1u<<17))){
-        world_sfx_seen|=1u<<17;
-        world_sfx_emit(a,world_sfx_origin,0x3f88);
     }
 }

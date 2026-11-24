@@ -155,14 +155,6 @@ static void world_fx_tick(void *a)
         world_sfx_seen|=1u<<16;world_white_stroke(a);
     }
     /* 红线（0x3f81 及其尾迹）由 world_helm_line_tick 统一发射。 */
-    unsigned flash=0;
-    if(world.source==306){
-        if(frame>=32&&!(world_sfx_seen&1)){world_sfx_seen|=1;flash=1;}
-        else if(frame>=76&&!(world_sfx_seen&2)){world_sfx_seen|=2;flash=1;}
-    }
-    if(flash&&world_joint47(a,point)){
-        world_sfx_emit(a,point,0x3f60);log_event("world_simple_fx_flash",(u32)(uptr)a,world.source,(u32)(frame*1000),0);
-    }
     const WEvent *event=w_event(world.source,frame);
     if(!event||event->hit<0||event->hit==world_sfx_hit)return;
     world_sfx_hit=event->hit;
