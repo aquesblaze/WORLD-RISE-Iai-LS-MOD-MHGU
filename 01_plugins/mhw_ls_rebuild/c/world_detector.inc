@@ -115,6 +115,14 @@ static u32 world_attack_shapes(void *manager)
 }
 static u32 world_player_query(void *manager,void *attack,void *a)
 {
+    /* Helm Breaker's physics owner spans the W_RISE/W_AIR/W_DOWN animation
+     * rebinds. Keep the body query disabled while airborne so a hit cannot
+     * cancel the dive; the native query resumes once the hunter lands. */
+    if(a&&a==(void *)(uptr)world.actor&&world.move>=W_RISE&&world.move<=W_DOWN&&
+       world_air_owner(a)&&local_ls(a)&&u16(a,STATE)==16&&
+       u16(a,ACTION)>=w_action(W_RISE)&&u16(a,ACTION)<=w_action(W_DOWN)&&
+       real(a,0x44)>real(a,0x10f0)+1)
+        return 0;
     unsigned watched=a==(void *)(uptr)world.actor&&world_detected_attack==(u32)(uptr)attack;
     unsigned before=watched?byte(a,0x31e0):0;
     u32 result=world_original_player_query(manager,attack,a);
