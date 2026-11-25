@@ -38,6 +38,32 @@ static unsigned world_primary_helm(void *attack)
     return world_attack_owned&&(uptr)attack==(uptr)world_attack_actor+0x3020&&
         u16(attack,0x34)==world_attack_id&&(world.move==W_DOWN||world.move==W_LAND);
 }
+static unsigned world_owns_weapon_hit(void *attack)
+{
+    return world_attack_owned&&(uptr)attack==(uptr)world_attack_actor+0x3020&&
+        u16(attack,0x34)==world_attack_id;
+}
+static void (*world_original_contact_stop)(void *,void *);
+static void world_contact_stop(void *manager,void *attack)
+{
+    void *a=(void *)(uptr)world_attack_actor;
+    /* Only the outgoing contact pause of an owned Small ISS weapon hit is
+     * replaced. Every other attack keeps GU's native hitstop. */
+    if(world.move==W_SMALL&&world_owns_weapon_hit(attack)&&world_bound&&
+       world_bound_actor==(u32)(uptr)a&&world.epoch==byte(a,AREA)&&
+       u16(a,STATE)==16&&u16(a,ACTION)==w_action(W_SMALL)&&u16(a,MOTION)==0x500+world.slot&&
+       byte(attack,0x6e)==0&&(word(attack,0x30)&8)&&word(attack,0x70)==(u32)(uptr)a){
+        /* GU stores the hunter's hitstop pair at +0x27ac/+0x27b0. Two native
+         * timer units are the slow timer's lightest positive request, so all
+         * Small ISS contacts get the same short pause instead of GU's
+         * varying values. Damage and animation are untouched. */
+        set_real(a,0x27ac,0);
+        set_real(a,0x27b0,2);
+        log_event("world_small_contact_stop",(u32)(uptr)a,byte(attack,6),u16(attack,0x34),word(a,0x27b0));
+        return;
+    }
+    world_original_contact_stop(manager,attack);
+}
 static void world_monster_damage(void *manager,void *attack,void *target,void *point,
                                  void *v1,void *v2,void *part,void *shape)
 {

@@ -837,6 +837,7 @@ static unsigned world_install(void)
         {0x2f4ee0,0xe92d4070u,0xe1a04000u},
         {0x169548,0xe92d4830u,0xe1a04000u},
         {0x119eef0,0xe92d4830u,0xe1a04000u},
+        {0x16db68,0xe92d4830u,0xed2d8b02u},
         {0x16bb38,0xe92d4ff0u,0xe28db01cu},
         {0x16c0c0,0xe92d4ff0u,0xe28db01cu},
         {0x171350,0xe92d4ff0u,0xe24dd004u},
@@ -868,11 +869,12 @@ static unsigned world_install(void)
     forge_hook_create((void *)(main_base+0x169548),(void *)world_attack_scale,(void **)&world_original_attack_scale);
     forge_hook_create((void *)(main_base+0x64b414),(void *)world_spirit_hud,(void **)&world_original_spirit_hud);
     forge_hook_create((void *)(main_base+0x119eef0),(void *)world_timers,(void **)&world_original_timers);
+    forge_hook_create((void *)(main_base+0x16db68),(void *)world_contact_stop,(void **)&world_original_contact_stop);
     forge_hook_create((void *)(main_base+0x16bb38),(void *)world_player_query,(void **)&world_original_player_query);
     forge_hook_create((void *)(main_base+0x16c0c0),(void *)world_monster_query,(void **)&world_original_monster_query);
     forge_hook_create((void *)(main_base+0x170968),(void *)world_monster_damage,(void **)&world_original_monster_damage);
     forge_hook_create((void *)(main_base+0x474674),(void *)world_shell_position,(void **)&world_original_shell_position);
     forge_hook_create((void *)(main_base+0x17260c),(void *)world_attack_shapes,(void **)&world_original_attack_shapes);
     forge_hook_create((void *)(main_base+0x23d80),(void *)world_camera,(void **)&world_original_camera);
-    return world_original_gauge_gain&&world_original_spirit_hud&&world_original_flinch_resist&&world_original_damage&&world_original_hp&&world_original_floor&&world_original_attack_scale&&world_original_timers&&world_original_player_query&&world_original_monster_query&&world_original_monster_damage&&world_original_shell_position&&world_original_attack_shapes&&world_original_camera;
+    return world_original_gauge_gain&&world_original_spirit_hud&&world_original_flinch_resist&&world_original_damage&&world_original_hp&&world_original_floor&&world_original_attack_scale&&world_original_timers&&world_original_contact_stop&&world_original_player_query&&world_original_monster_query&&world_original_monster_damage&&world_original_shell_position&&world_original_attack_shapes&&world_original_camera;
 }
