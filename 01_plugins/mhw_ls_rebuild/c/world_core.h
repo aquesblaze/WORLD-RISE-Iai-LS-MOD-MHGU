@@ -57,11 +57,28 @@ enum { W_VALOR_SPIRIT_III=0x74, W_VALOR_SPIRIT_III_DASH=0x87,
 #ifndef W_ISS_DAMAGE_SCALE
 #define W_ISS_DAMAGE_SCALE 0.30f
 #endif
-/* Red Spirit Helm Breaker motion value per hit. The generated source HDP keeps
- * World's 25 MV; the plugin patches only owned red Helm shells at dispatch so
- * no ARC regeneration is needed. Override with -DW_HELM_RED_MV=<n>. */
+/* Helm Breaker rebalance: motion value per hit is 8/10/13 for white/yellow/
+ * red. The generated HDP already carries these values; the plugin patches the
+ * old source values (10/15/25) at dispatch so a stale deployed ARC agrees too.
+ * Override any of them with -DW_HELM_<TIER>_MV=<n>. */
+#ifndef W_HELM_WHITE_MV
+#define W_HELM_WHITE_MV 8u
+#endif
+#ifndef W_HELM_YELLOW_MV
+#define W_HELM_YELLOW_MV 10u
+#endif
 #ifndef W_HELM_RED_MV
-#define W_HELM_RED_MV 20u
+#define W_HELM_RED_MV 13u
+#endif
+/* Helm Breaker part-break modifier by hit ordinal: hits1-3, hits4-6, hit7. */
+#ifndef W_HELM_PART_EARLY
+#define W_HELM_PART_EARLY 0.3f
+#endif
+#ifndef W_HELM_PART_MID
+#define W_HELM_PART_MID 0.4f
+#endif
+#ifndef W_HELM_PART_LAST
+#define W_HELM_PART_LAST 0.6f
 #endif
 /* Iai Spirit Slash counter-detector lifetime in seconds. The source shell is
  * 0.2s (12 frames at 60fps); 0.30 widens the perfect-counter window to 18
