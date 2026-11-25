@@ -66,23 +66,19 @@ static void world_tf_tick(void *a,float frame)
         float dist[3]={real(a,0x40),real(a,0x44)-30,real(a,0x48)};
         world_sfx_emit(a,dist,0x3d03);
     }
-    if(world.move!=W_THRUST||!world.rank||frame<10)return;
+    if(world.move!=W_THRUST||!world.rank||frame<84)return;
     void *w=(void *)(uptr)word(a,0x23a0);
     if(!w||word(w,0x30)!=(u32)(uptr)a)return;
     const float *m=world_bone(w,0);if(!m)return;
-    float p[3];
-    if(!(world_sfx_seen&256)){
-        world_sfx_seen|=256;
-        for(unsigned k=0;k<3;++k)p[k]=world_thrust_origins[0][k]=m[12+k];
-        world_sfx_oriented(a,p,0x3d17,m);
-    }
-    if(frame>=84&&!(world_sfx_seen&16)){
+    if(!(world_sfx_seen&16)){
         world_sfx_seen|=16;
-        for(unsigned k=0;k<3;++k)p[k]=world_thrust_origins[1][k]=world_thrust_origins[2][k]=m[12+k];
-        world_sfx_oriented(a,p,0x3d1c,m);
-        world_sfx_oriented(a,p,0x3d16,m);
-        for(unsigned k=0;k<3;++k)p[k]=m[12+k]+m[8+k]*180;
+        /* F84 is the Spirit Thrust hit. 0x3d1b is placed at the blade
+         * contact point (m[12]+180*m[8]) and is not re-followed, so it is
+         * the slash on the monster body: keep it. The pre-hit blade line
+         * 0x3d17 at F10 and the blade-attached strokes 0x3d1c/0x3d16 at
+         * F84 stay disabled. Damage and hit detection are unchanged. */
+        float p[3];
+        for(unsigned k=0;k<3;++k)p[k]=m[12+k]+180.f*m[8+k];
         world_sfx_oriented(a,p,0x3d1b,m);
-        /* The old destination-colour proxy draws a solid disk, not refraction. */
     }
 }
