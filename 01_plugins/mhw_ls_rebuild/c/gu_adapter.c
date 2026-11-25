@@ -301,6 +301,13 @@ static u32 request_hook(void *a,u32 state,u32 action,u32 flags)
     ml_pad_read();
 #if ML_WORLD_COMBAT
     if(world_request(a,state,action,flags))return 0;
+    /* Native roll requests outside a World decision also need the back-roll
+     * facing arm; plugin-driven rolls are armed in world_pay() instead. */
+    if(state==1&&(action==6||action==13||action==14)&&u16(a,STATE)==16&&
+       (held&ML_B)&&!(held&ML_R)){
+        MLObservation roll=observe(a,1);
+        if(roll.eligible&&world_attack_back(&roll))world_back_roll_arm(a,roll.heading);
+    }
 #if ML_WORLD_INPUT_VM
     return original_request(a,state,action,flags);
 #endif
@@ -343,6 +350,12 @@ static uptr __attribute__((pcs("aapcs-vfp"))) layer_hook(void *a,u32 layer,u32 m
             log_event("world_idle_bind",(u32)(uptr)a,motion,flags,(u32)blend);
             if(motion==5001u && blend<8){flags|=0x81u;blend=8;}
         }
+    }
+    if(layer==0&&motion!=0xffffu&&motion!=5000u+WORLD_BACK_ROLL_SLOT)
+        world_back_roll_end(a);
+    if(layer==0&&local_ls(a)){
+        unsigned roll=world_back_roll_bind(a,motion);
+        if(roll)motion=roll;
     }
 #endif
     uptr result=original_layer(a,layer,motion,flags,blend,start,speed);

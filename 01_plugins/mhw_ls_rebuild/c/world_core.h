@@ -6,6 +6,16 @@
 
 enum { W_NONE,W_FORESIGHT,W_THRUST,W_RISE,W_AIR,W_DOWN,W_LAND,W_SHEATHE,W_SMALL,W_BIG,W_SHEATHE_END,W_GROUND };
 enum { W_KEEP,W_ENTER,W_NATIVE,W_IDLE,W_ROLL,W_ABORT,W_NATIVE_R,W_MOTION };
+/* Back rolls keep facing the attacker: GU's native roll is rebound to this
+ * appended motion slot while the pre-attack heading is restored. */
+enum { WORLD_BACK_ROLL_SLOT=135, WORLD_BACK_ROLL_MOTION=0x500+WORLD_BACK_ROLL_SLOT };
+
+static inline unsigned world_attack_back(const MLObservation *o)
+{
+    unsigned angle=(o->input_heading-o->heading)&65535u;
+    return o->magnitude>=50&&angle>24576&&angle<40960;
+}
+
 typedef struct {
     unsigned actor,epoch,sample,held,waiting,ready;
     float remaining[3];

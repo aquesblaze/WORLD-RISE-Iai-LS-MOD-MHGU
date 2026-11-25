@@ -505,7 +505,11 @@ static WDecision world_command_step(WState *s,const WObservation *o,unsigned sou
     if(s->move&&event&&((event->input[0]>>8)&3)==3&&
        w_controls_query(&s->controls,17,0,0)){
         WDecision d=w_leave(s);d.kind=W_ROLL;
-        d.heading=b->magnitude>=50?b->input_heading:b->heading;return d;
+        if(world_attack_back(b)){
+            d.slot=WORLD_BACK_ROLL_SLOT;
+            d.heading=b->heading;
+        }else d.heading=b->magnitude>=50?b->input_heading:b->heading;
+        return d;
     }
     if(s->move&&(b->motion_finished||frame>=w_clip(source)->length-1)){
         WDecision d=w_leave(s);d.kind=W_IDLE;return d;

@@ -250,6 +250,49 @@ static unsigned world_ready(void *a)
         hdp&&word(hdp,0)==0x00504448&&word(hdp,8)>=WORLD_HIT_COUNT&&
         hts&&word(hts,0)==0x00535448&&word(hts,8)>=WORLD_SHAPE_COUNT;
 }
+/* Native back rolls retain the pre-attack heading. Arm on the roll request,
+ * then swap GU's bound roll motion to the appended slot at bind time. */
+static const float world_back_roll_rate=1.6f;
+static struct { void *actor; unsigned epoch, facing, sample; } world_back_roll_pending;
+static void *world_back_roll_actor;
+static unsigned world_back_roll_epoch,world_back_roll_action;
+
+static void world_back_roll_arm(void *a,unsigned facing)
+{
+    world_back_roll_pending.actor=a;
+    world_back_roll_pending.epoch=byte(a,AREA);
+    world_back_roll_pending.facing=facing;
+    world_back_roll_pending.sample=sample_sequence;
+}
+static unsigned world_back_roll_bind(void *a,unsigned motion)
+{
+    unsigned action=u16(a,ACTION);
+    if(world_back_roll_pending.actor!=a||u16(a,STATE)!=1||
+       !((action==6&&motion==28)||(action==13&&motion==5013)||(action==14&&motion==5012)))
+        return 0;
+    world_back_roll_pending.actor=0;
+    if(world_back_roll_pending.epoch!=byte(a,AREA)||sample_sequence-world_back_roll_pending.sample>2)
+        return 0;
+    void *resource=(void *)(uptr)word(a,0xf04+20);
+    void *bank=resource?(void *)(uptr)word(resource,0x64):0;
+    if(!bank||u16(bank,6)<=WORLD_BACK_ROLL_SLOT||!word(bank,8+WORLD_BACK_ROLL_SLOT*4))
+        return 0;
+    unsigned facing=world_back_roll_pending.facing;
+    put(a,HEADING,facing);put(a,TARGET,facing);
+    world_back_roll_actor=a;
+    world_back_roll_epoch=byte(a,AREA);
+    world_back_roll_action=action;
+    set_real(a,0x14b0,world_back_roll_rate);
+    log_event("world_attack_roll",(u32)(uptr)a,facing,motion,WORLD_BACK_ROLL_SLOT);
+    return 5000+WORLD_BACK_ROLL_SLOT;
+}
+static void world_back_roll_end(void *a)
+{
+    if(world_back_roll_actor!=a)return;
+    world_back_roll_actor=0;
+    set_real(a,0x14b0,1);
+    set_real(a,0x50c,1);
+}
 static void world_pay(void *a,WDecision d)
 {
     if(d.rank_delta){
@@ -393,6 +436,7 @@ static void world_commit(void *a,WDecision d)
         log_event("world_chord_solo",(u32)(uptr)a,target,0x1000,gauge);
         if(target)virtual_request(a,16,target,0x1000);
     }else if(d.kind==W_ROLL){
+        if(d.slot==WORLD_BACK_ROLL_SLOT)world_back_roll_arm(a,d.heading);
         put(a,HEADING,d.heading);put(a,TARGET,d.heading);
         virtual_request(a,1,6,12);
     }
@@ -559,8 +603,52 @@ static unsigned world_request(void *a,unsigned state,unsigned action,unsigned fl
     return 0;
 #endif
 }
+#if ML_WORLD_INPUT_VM
+/* Stock GU Hunter Art cancel during a World move's private recovery. The
+ * command table is the shared native art entry (0x8010/0xf1, predicate 19);
+ * GU's own evaluator resolves the equipped slot and pays its costs. */
+static unsigned world_try_hunter_art(void *a,const WObservation *o)
+{
+    if(!world_bound||!o->alive||!o->grounded||
+       o->base.native_action!=w_action(world.move)||o->base.motion!=0x500+world.slot||
+       !w_private(o->state,o->base.native_action)||word(a,0x24a8))return 0;
+
+    const WEvent *e=w_event(world.source,o->base.animation_frame);
+    if(!e||e->hit>=0)return 0;
+    unsigned roll=(e->input[WI_ROLL.word]>>WI_ROLL.shift)&3;
+    unsigned spirit=(e->input[WI_R.word]>>WI_R.shift)&3;
+    unsigned recovery=world.move==W_GROUND?roll==3:
+        world.move==W_FORESIGHT?(roll||spirit==3):
+        (world.move==W_THRUST||world.move==W_LAND||world.move==W_SMALL||world.move==W_BIG)&&roll;
+    if(!recovery)return 0;
+
+    u32 command[31]={0};
+    command[25]=0x00f18010u;command[26]=0x00130000u;
+    u32 row[]={0,1,(u32)(uptr)command,0,0,0};
+    u32 entry=(u32)(uptr)row;
+    u32 table[]={0,0,1,0,0,(u32)(uptr)&entry};
+    unsigned char *latched=(unsigned char *)((uptr)a+0x24b0);
+    unsigned saved=*latched,source=world.source;
+    *latched=0;put(a,0x24a8,(u32)(uptr)table);
+    ((u32 (*)(void *))(main_base+0x2e9d54))(a);
+    if(word(a,0x24a8)==(u32)(uptr)table){
+        put(a,0x24a8,0);*latched=saved;
+    }
+    if(u16(a,STATE)==16&&u16(a,ACTION)==o->base.native_action)return 0;
+    log_event("world_hunter_art",o->base.actor,source,(u32)(o->base.animation_frame*1000),
+        (u16(a,STATE)<<16)|u16(a,ACTION));
+    return 1;
+}
+#endif
 static unsigned world_update(void *a,const MLObservation *b)
 {
+    if(world_back_roll_actor==a){
+        if(u16(a,STATE)==1&&b->native_action==world_back_roll_action&&b->motion==WORLD_BACK_ROLL_MOTION&&
+           world_back_roll_epoch==byte(a,AREA)){
+            set_real(a,0x14b0,world_back_roll_rate);
+            set_real(a,0x50c,world_back_roll_rate);
+        }else world_back_roll_end(a);
+    }
     world_loop_heading(a);
 #if ML_WORLD_AUDIO_PROBE || ML_WORLD_PRESENTATION
     world_audio_tick(a);
@@ -660,6 +748,12 @@ static unsigned world_update(void *a,const MLObservation *b)
         unsigned facing=(world.heading+w_root_heading(world.source,real(a,FRAME)))&65535u;
         put(a,HEADING,facing);put(a,TARGET,facing);o.base.heading=facing;
     }
+#if ML_WORLD_INPUT_VM
+    /* The fork's latched ISS solo-B roll owns its F70+grace window; keep GU's
+     * art evaluator from stealing that press. All other recoveries use the
+     * stock art-cancel rule. */
+    if(!(world.follow_ready&8u)&&world_try_hunter_art(a,&o))return 1;
+#endif
     WDecision d=w_step(&world,&o);
     /* Spirit Thrust only enters W_RISE after its hit lands, so this edge marks
      * a successful launch into the Spirit Helm Breaker. */
@@ -732,6 +826,9 @@ static unsigned world_install(void)
     if(!world_audio_install())return 0;
 #endif
     const u32 entries[][3]={
+#if ML_WORLD_INPUT_VM
+        {0x2e9d54,0xe92d4ff0u,0xe28db01cu},
+#endif
         {0x2a309c,0xe92d4070u,0xe1a04000u},
         {0x64b414,0xe92d48f0u,0xe1a04000u},
         {0x23d80,0xe92d4070u,0xed2d8b02u},
