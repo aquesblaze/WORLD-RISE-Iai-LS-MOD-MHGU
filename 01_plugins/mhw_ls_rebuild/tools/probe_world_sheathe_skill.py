@@ -36,7 +36,7 @@ def main():
             f.command('R 24\nB 24')
             early=wait(lambda s:s['action']==246 and s['motion']==0x5e6 and 20<=s['frame']<60)
             rate=f.read(a+0x50c,'<f')
-            assert abs(rate-(1.45 if enabled else 1.))<.0001,(enabled,early,rate)
+            assert abs(rate-(1.50 if enabled else 1.))<.0001,(enabled,early,rate)
             late=wait(lambda s:s['action']==246 and s['motion']==0x5e6 and s['frame']>=90)
             late_rate=f.read(a+0x50c,'<f')
             assert abs(late_rate-1)<.0001,late_rate

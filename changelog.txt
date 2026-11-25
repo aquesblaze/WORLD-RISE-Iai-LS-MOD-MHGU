@@ -1,9 +1,31 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-25
-Build terakhir: helm-8-10-13-part-03-04-06
+Build terakhir: quick-sheathe-1.50
 
 ============================================================
-PERUBAHAN TERBARU (Rebalance Helm Breaker)
+PERUBAHAN TERBARU (Quick Sheathe 1.45x -> 1.50x)
+============================================================
+
+1. Kecepatan Special Sheathe dengan Quick Sheathe
+   - c/world_adapter.inc: world_motion_speed() mengubah bonus skill dari
+     1.45f menjadi 1.50f. Empat ID skill tetap sama (0x5d/0x13a/0x117/0x129)
+     dan hanya aktif pada segmen awal W_SHEATHE saat event common2 bit19
+     (0x80000) menyala. Tanpa skill tetap 1,0; zoom kamera 0,50s masuk /
+     0,80s keluar tidak diubah.
+   - src/lib.rs: string log instalasi diperbarui ke "sheath x1.50".
+   - tools/probe_world_sheathe_skill.py dan tools/inspect_world_motion_rules.py:
+     nilai uji/evidensi disinkronkan ke 1.50.
+   - docs/改动说明.md: referensi 1.45 diperbarui ke 1.50.
+
+2. Build dan verifikasi
+   - NRO bundel: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 3251b9f4bf066e99d03607702ca2d1b9f742acb2ac120fe69a7e35023fa6be44
+   - NRO tracked 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro tetap baseline
+     1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - ARC tidak berubah; py_compile tool terkait: OK.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Rebalance Helm Breaker)
 ============================================================
 
 1. Damage dan part break Helm Breaker
