@@ -1,9 +1,30 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-25
-Build terakhir: quick-sheathe-1.50
+Build terakhir: sheathe-150-110
 
 ============================================================
-PERUBAHAN TERBARU (Quick Sheathe 1.45x -> 1.50x)
+PERUBAHAN TERBARU (Special Sheathe tanpa skill 1.10x)
+============================================================
+
+1. Kecepatan Special Sheathe tanpa Quick Sheathe
+   - c/world_adapter.inc: world_motion_speed() kini memakai 1.10f pada segmen
+     awal W_SHEATHE (common2 bit19 / 0x80000) bila tidak ada salah satu dari
+     empat skill Quick Sheathe. Dengan skill tetap 1.50f.
+   - src/lib.rs: log instalasi menjadi "sheath x1.50/1.10".
+   - tools/probe_world_sheathe_skill.py dan tools/inspect_world_motion_rules.py:
+     ekspektasi tanpa skill diperbarui dari 1,0 ke 1,10.
+   - docs/改动说明.md: catatan tanpa skill diperbarui.
+   - Zoom kamera 0,50s masuk / 0,80s keluar tidak diubah; ARC tidak berubah.
+
+2. Build dan verifikasi
+   - NRO bundel: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 4b190da1488ff102ce31b0f4346199770831510e1ea845a3ab6c23cf5aa2702e
+   - NRO tracked 01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro tetap baseline
+     1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - py_compile tool terkait: OK.
+
+============================================================
+PERUBAHAN SEBELUMNYA (Quick Sheathe 1.45x -> 1.50x)
 ============================================================
 
 1. Kecepatan Special Sheathe dengan Quick Sheathe
