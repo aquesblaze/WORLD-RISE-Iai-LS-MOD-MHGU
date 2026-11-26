@@ -1,6 +1,6 @@
 CHANGELOG - MHGU Long Sword (World-style rebuild)
 Tanggal: 2026-11-25
-Build terakhir: sheathe-150-110
+Build terakhir: quick-rise-slot249-110to100-15e64258
 
 ============================================================
 EKSPERIMEN (Quick Special Sheathe, source 0x5EE / slot 251)
@@ -677,3 +677,127 @@ H. Yang tetap mengikuti World/GU (bukan Rise)
 
 Catatan: rincian teknis lengkap ada di README.md dan docs/改动说明.md.
 
+============================================================
+EKSPERIMEN (Weapon clip Quick Special Sheathe Rise, slot 238)
+============================================================
+
+I. Port weapon animation Rise untuk motion quick 0x5FB
+   - Sumber: mod LS Rise, weapon LMT slot 238 (motion 0x5EE), 65 frame,
+     4-6 track di g00/g01/g02/g04/g07/g08/g10/g11. Frames sama dengan
+     body clip quick Rise (slot 238) yang sudah dipakai di slot 251.
+   - tools/prepare_quick_sheathe_rise_arc.py: --lmt weapon\w07\mot\wg07_XX,
+     --source-slot 238, --slot 238, --force. Hanya pointer slot yang berubah;
+     blob lama tetap utuh dan klip baru ditambahkan di akhir bank.
+   - g02/g08 slot 238 berisi klip stok 11 frame; ditimpa sesuai perilaku Rise
+     sendiri. Isi klip identical dengan sumber (pointer tidak dihitung).
+   - Percobaan mengarahkan weapon motion ke 238 dan mematikan override
+     attachment (NRO 5cf72720...) GAGAL secara visual: pedang menancap ke
+     bawah, sarung tetap di punggung, dan tidak ada gerakan weapon.
+   - Penyebab: klip weapon Rise slot 238 ternyata static (semua track
+     size=0 / konstan). Animasi pedang-sarung Rise sesungguhnya ada di track
+     body slot 238 (bone 8/12). Jadi menyalin klip weapon tidak menghasilkan
+     animasi, dan mematikan override attachment menghilangkan satu-satunya
+     mekanisme yang menggerakkan objek weapon.
+   - Sempat dikembalikan ke perilaku b7ff4fe (override slot 230 + quick_sync,
+     NRO d3c52cc...) sebagai baseline sebelum membuat attachment Rise.
+
+============================================================
+EKSPERIMEN (Attachment Rise untuk Quick Special Sheathe)
+============================================================
+
+J. Attachment identity, bukan klip weapon
+   - Decode klip body Rise slot 238 (65 frame, codec6/q14) menunjukkan bone
+     8 = pedang dan bone 12 = sarung benar-benar dianimasikan. Tidak ada track
+     function30/47 terpisah; rest transform keduanya identity.
+   - gu_adapter.c: untuk motion 0x5FB, attachment_pose() kini memberi pose
+     identity (translasi 0, quaternion 0,0,0,1), role9 -> joint 12 (sarung),
+     role10 -> joint 8 (pedang). Tidak ada lagi quick_sync/quick_scabbard dan
+     tidak ada frame scaling ke slot 230.
+   - preview_equipment_motion() untuk 0x5FB dibiarkan memakai jalur native;
+     klip weapon Rise 238 tetap tidak dipakai karena isinya statis.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 98410d8a249ecce969e57f863ca3dc705a9ce64d387e4f6d68858a0ad2e526a4
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Verifikasi: build berflag PASS, build normal tanpa flag tetap badcb85...,
+     check_relocations.py PASS, py_compile PASS, diff --check PASS,
+     body ARC tetap 4e915f75... Belum dites visual.
+
+K. Lanjut ke kandidat body Rise slot 249 (92 frame)
+   - Pemeriksaan file Rise: 125 weapon bernomor = model, 8 gXX.arc = LMT weapon
+     dengan track slot 238 size=0 (statis), com.arc = tabel pwl placement,
+     w07_m0..m4 = player\cmd. Animasi pitch/yaw pedang berasal dari body clip.
+   - prepare_quick_sheathe_rise_arc.py --source-slot 249 --slot 251 --force:
+     klip 92f/21 track disalin persis (hanya pointer direlokasi) ke slot 251.
+     Semua byte lama tetap utuh; blob lama tidak dihapus.
+   - world_core.c: source306 -> {slot 251, 92f}; w_event() memakai tabel
+     flag-only 6 event = 245..250 x92/272. Tabel world_events.h tidak diubah
+     supaya build normal tetap byte-identik.
+   - Attachment identity dari J tetap dipakai: role9 -> joint12, role10 ->
+     joint8, pose local identity. Tidak ada log baru.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : a3c386a3b2a617f5bd865505bf06907c3a8ac3c02697f3503e79ad0038da2219
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+     Body ARC   : 87d0ca8c68f7c248862d21496bd73e52d5610536cda39c8773c8ed4978b3f7fa
+   - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
+     check_relocations.py PASS, py_compile PASS, diff --check PASS,
+     signature slot251 == source249. Belum dites visual.
+
+L. Telemetri posisi pedang/sarung untuk slot 249
+   - gu_adapter.c: sample qs_* diubah dari 1 per 4 frame menjadi 1 per frame
+     per role. role9 = sarung, role10 = pedang.
+   - qs_world = translasi objek equipment (matrix +0xb0); qs_local = pose
+     attachment; qs_quat = quaternion attachment.
+   - qs_bone baru: translasi bone animasi body (bone12 sarung, bone8 pedang)
+     dari accessor bone actor. Logging saja, tidak mengubah pose/logika lain.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 4391d1c29a7771d74f780e4e174ec87667acd02a20e0e953cdafc11f4c28b173
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
+     check_relocations.py PASS, diff --check PASS, string qs_bone hadir di NRO.
+
+M. Titik ujung pedang dan mulut sarung
+   - gu_adapter.c: qs_tip = bone8 matrix * rest-local function30
+     (23.18,-1.98,60.31); qs_mouth = bone12 matrix * rest-local function47
+     (-7.84,-4.57,-4.46). Offset diambil dari data attachment World.
+   - qs_pair = jarak qs_tip ke qs_mouth (float32), satu sampel per frame.
+   - Logging saja; tidak mengubah pose, attachment, atau event.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 611e5e18159947431970cadc19c73dbcb91d6b476b9d4297e7fda86e8e884f56
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
+     check_relocations.py PASS, diff --check PASS, string qs_tip/qs_mouth/qs_pair hadir.
+
+N. Kembalikan posisi pedang/sarung ke pola push terakhir
+   - Sesuai pilihan: klip Rise slot249 (92f) tetap dipakai, tetapi attachment
+     dikembalikan ke perilaku b7ff4fe: slot230 + quick_sync/quick_scabbard.
+   - moveset.h: frame scaling 272/92 (dulu 272/65); W_QUICK_SYNC_AT 27.058824
+     (dulu 20.0), setara raw frame 80 pada klip slot230.
+   - gu_adapter.c: logika quick_sync/quick_scabbard dipulihkan apa adanya;
+     telemetri qs_* tetap aktif, tidak ada log baru selain yang sudah ada.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 94ad187787144317e5c42191a89f36e3e05f8b1e87134e75893d31dc1cc33cdd
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
+     check_relocations.py PASS, diff --check PASS. Belum dites visual.
+
+O. Hybrid: animasi pedang versi sebelumnya + posisi versi sekarang
+   - Sesuai permintaan: animasi weapon clip saat pedang masuk mulut sarung
+     dikembalikan seperti versi sebelumnya (attachment identity), dengan
+     cara melewati baris weapon-motion slot230 untuk motion 0x5FB.
+   - gu_adapter.c: preview_equipment_motion() langsung memanggil
+     original_equipment_motion() untuk 0x5FB. Pose attachment tetap memakai
+     slot230 + quick_sync/quick_scabbard seperti versi sekarang.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 0f883ac989269a3fe183595ab8ce0aafc7ad0e2eb9d900ffa3e4a21ef5f34e80
+     NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
+     check_relocations.py PASS, diff --check PASS. Belum dites visual.
+
+V. Commit final (versi NRO 0f883ac9)
+   - Perubahan setelah O dicoba lalu dikembalikan (kecepatan, offset X,
+     telemetri tambahan tidak dipertahankan). Source dan NRO aktif kembali
+     persis ke versi O.
+   - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256: 0f883ac989269a3fe183595ab8ce0aafc7ad0e2eb9d900ffa3e4a21ef5f34e80
+   - NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - Build normal tanpa flag: badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece

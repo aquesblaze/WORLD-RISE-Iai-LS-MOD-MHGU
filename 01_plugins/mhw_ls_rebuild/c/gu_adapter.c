@@ -155,6 +155,14 @@ static void quick_sample(const MLAttachmentClip *clip,u32 n,u32 next,float frac,
     if(len>.00001f)for(u32 i=0;i<4;++i)q[i]/=len;
     else{q[0]=q[1]=q[2]=0;q[3]=1;}
 }
+/* Logging only: rest-local equipment points on the same parent bones. */
+static const float qs_tip_local[3]={23.18f,-1.98f,60.31f};
+static const float qs_mouth_local[3]={-7.84f,-4.57f,-4.46f};
+static void qs_point(const float *m,const float *local,float *out)
+{
+    for(u32 k=0;k<3;++k)
+        out[k]=m[12+k]+m[k]*local[0]+m[4+k]*local[1]+m[8+k]*local[2];
+}
 #endif
 static unsigned attachment_pose(void *a,u32 role,float *out,u32 *joint,u32 *closed)
 {
@@ -314,15 +322,16 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
     put(object,0x13d4,role==10||closed?2:1);put(object,0x1408,0);
     ((void (*)(void *,void *,u32))(*(uptr **)object)[0x48/4])(object,a,joint);
 #if ML_WORLD_QUICK_SHEATHE_RISE
-    /* Temporary placement telemetry for 0x5FB: role 9 = scabbard, 10 = sword.
-     * One sample per 4 frames per role; logging only, no pose changes. */
+    /* Placement telemetry for 0x5FB: role 9 = scabbard, 10 = sword.
+     * One sample per frame per role; logging only, no pose changes. */
     if(u16(a,MOTION)==0x5fbu){
         static u32 qs_bucket[2];
-        u32 bucket=(u32)real(a,FRAME)/4u;
-        if(bucket!=qs_bucket[ix]){
+        u32 frame=(u32)real(a,FRAME);
+        if(frame!=qs_bucket[ix]){
             const float *m=(const float *)((uptr)object+0xb0);
-            qs_bucket[ix]=bucket;
-            log_event("qs_state",(u32)(uptr)object,role,bucket,(joint<<16)|closed);
+            u32 bone=role==10?8:12;
+            qs_bucket[ix]=frame;
+            log_event("qs_state",(u32)(uptr)object,role,frame,(joint<<16)|closed);
             for(u32 i=0;i<3;++i){
                 log_event("qs_world",(u32)(uptr)object,role+i*3,
                           *(u32 *)&m[12+i],word(object,0x13d0));
@@ -332,6 +341,25 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
                           *(u32 *)&pose[4+i],0);
             }
             log_event("qs_quat",(u32)(uptr)object,role+9,*(u32 *)&pose[7],0);
+            const float *b=quick_bone(a,bone);
+            if(b)for(u32 i=0;i<3;++i)
+                log_event("qs_bone",(u32)(uptr)a,bone+i*3,
+                          *(u32 *)&b[12+i],frame);
+            if(role==10){
+                const float *m8=quick_bone(a,8),*m12=quick_bone(a,12);
+                if(m8&&m12){
+                    float tip[3],mouth[3],delta[3];
+                    qs_point(m8,qs_tip_local,tip);
+                    qs_point(m12,qs_mouth_local,mouth);
+                    for(u32 i=0;i<3;++i){
+                        log_event("qs_tip",(u32)(uptr)a,i,*(u32 *)&tip[i],frame);
+                        log_event("qs_mouth",(u32)(uptr)a,i,*(u32 *)&mouth[i],frame);
+                        delta[i]=tip[i]-mouth[i];
+                    }
+                    float distance=att_sqrt(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2]);
+                    log_event("qs_pair",(u32)(uptr)a,*(u32 *)&distance,frame,0);
+                }
+            }
         }
     }
 #endif
@@ -342,6 +370,12 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
 static u32 preview_equipment_motion(void *object,u32 owner,u32 c,u32 d)
 {
     void *a=(void *)(uptr)owner;
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Keep the native weapon clip for the Rise quick clip. The slot230
+     * weapon-motion row changes the blade during insertion; the pushed
+     * attachment pose logic below still supplies sword/sheath placement. */
+    if(u16(a,MOTION)==0x5fbu)return original_equipment_motion(object,owner,c,d);
+#endif
     if(word(object,0x13d0)==9&&local_ls(a)){
         unsigned motion=u16(a,MOTION);float frame=W_ATTACH_FRAME(motion,real(a,FRAME));
         if((motion>>8)==5&&frame>=0&&frame<10000)

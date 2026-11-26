@@ -62,11 +62,10 @@ float w_float(unsigned source,unsigned channel,float frame)
 const WClip *w_clip(unsigned source)
 {
 #if ML_WORLD_QUICK_SHEATHE_RISE
-    /* Experimental Quick Special Sheathe: action 0xf0 accepts motions 0x5ee
-     * and 0x5f9; in-game 0x5f9 is the no-skill sheathe and 0x5f5/0x5fa are
-     * Small Iai/ISS, so 0x5ee (65f) is the quick variant. Appended at slot 251.
-     * Event rows 339..344 are 245..250 scaled by 65/272. */
-    if(source==306){static const WClip quick={306u,251u,65u,339u,6u};return &quick;}
+    /* Experimental Quick Special Sheathe: try Rise slot 249 (92f) next.
+     * It is appended at slot 251 (motion 0x5FB) without touching the stock
+     * clip. w_event() supplies 245..250 scaled by 92/272 for this source. */
+    if(source==306){static const WClip quick={306u,251u,92u,339u,6u};return &quick;}
 #endif
     for(unsigned i=0;i<sizeof(world_clips)/sizeof(*world_clips);++i)
         if(world_clips[i].source==source)return world_clips+i;
@@ -85,6 +84,25 @@ const WEvent *w_event(unsigned source,float frame)
         if(!spirit&&frame>=130)return landing+2;
         return landing+(frame>=(spirit?10:70));
     }
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Rise slot249 is 92f. Keep the generated event table (and the normal
+     * build) byte-identical; scale source306's 245..250 to the new length
+     * only in this experimental build. */
+    if(source==306){
+        if(!(frame>=0))return 0;
+        static const WEvent quick[]={
+            {0.000000f,{0u,0u,0u,0u,0u,0u,0u},37748736u,524288u,0u,1.000000f,0u,0.000000f,-1},
+            {3.382353f,{0u,0u,0u,0u,0u,0u,0u},54525952u,557056u,0u,1.000000f,0u,0.000000f,-1},
+            {5.073529f,{0u,0u,0u,0u,0u,0u,0u},54525958u,557056u,0u,1.000000f,0u,0.000000f,-1},
+            {21.985294f,{65536u,4096u,0u,0u,0u,0u,0u},54525958u,557056u,0u,1.000000f,0u,0.000000f,-1},
+            {24.691176f,{65536u,4096u,0u,0u,0u,0u,0u},54525958u,32768u,1024u,1.000000f,1u,0.000000f,-1},
+            {27.058824f,{196608u,12288u,0u,0u,0u,0u,0u},54525958u,32768u,1024u,1.000000f,1u,0.000000f,-1}
+        };
+        const WEvent *e=quick;unsigned i=1;
+        while(i<sizeof(quick)/sizeof(*quick)&&e[i].frame<=frame)++i;
+        return e+i-1;
+    }
+#endif
     const WClip *c=w_clip(source);if(!c||!(frame>=0))return 0;
     const WEvent *e=world_events+c->offset;unsigned i=1;
     while(i<c->count&&e[i].frame<=frame)++i;
