@@ -133,10 +133,10 @@ static const float *world_raw_bone(void *a,unsigned bone)
 #if ML_WORLD_FX_PROBE || ML_WORLD_AUDIO_PROBE || ML_WORLD_PRESENTATION
 static unsigned world_joint47(void *a,float *out)
 {
-    unsigned motion=u16(a,MOTION);float frame=real(a,FRAME);
+    unsigned motion=u16(a,MOTION);float frame=W_ATTACH_FRAME(motion,real(a,FRAME));
     const MLAttachmentClip *clip=0;
     for(unsigned i=0;i<sizeof(ml_attachment_clips)/sizeof(*clip);++i)
-        if(motion==0x500+ml_attachment_clips[i].slot){clip=ml_attachment_clips+i;break;}
+        if(W_ATTACH_SLOT(motion)==ml_attachment_clips[i].slot){clip=ml_attachment_clips+i;break;}
     if(!clip||!(frame>=0&&frame<10000))return 0;
     unsigned n=(unsigned)frame;if(n>=clip->frames)n=clip->frames-1;
     unsigned next=n+1<clip->frames?n+1:n;float f=frame-(float)n;if(f>1)f=1;

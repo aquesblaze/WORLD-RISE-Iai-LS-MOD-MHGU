@@ -15,6 +15,10 @@ fn main(){
     let audio_probe=env::var("ML_WORLD_AUDIO_PROBE").as_deref()==Ok("1");
     let fx_probe=env::var("ML_WORLD_FX_PROBE").as_deref()==Ok("1");
     let presentation=env::var("ML_WORLD_PRESENTATION").as_deref()==Ok("1");
+    let quick_sheathe=env::var("ML_WORLD_QUICK_SHEATHE_RISE").as_deref()==Ok("1");
+    println!("cargo:rerun-if-env-changed=ML_WORLD_QUICK_SHEATHE_RISE");
+    println!("cargo:rustc-check-cfg=cfg(ml_world_quick_sheathe_rise)");
+    if quick_sheathe {println!("cargo:rustc-cfg=ml_world_quick_sheathe_rise");}
     assert!(!presentation||(combat&&!fx_probe&&!audio_probe),"Presentation build is separate from probes");
     println!("cargo:rerun-if-env-changed=ML_WORLD_PRESENTATION");
     println!("cargo:rustc-check-cfg=cfg(ml_world_presentation)");
@@ -47,6 +51,7 @@ fn main(){
             .arg(if audio_probe {"-DML_WORLD_AUDIO_PROBE=1"} else {"-DML_WORLD_AUDIO_PROBE=0"})
             .arg(if fx_probe {"-DML_WORLD_FX_PROBE=1"} else {"-DML_WORLD_FX_PROBE=0"})
             .arg(if presentation {"-DML_WORLD_PRESENTATION=1"} else {"-DML_WORLD_PRESENTATION=0"})
+            .arg(if quick_sheathe {"-DML_WORLD_QUICK_SHEATHE_RISE=1"} else {"-DML_WORLD_QUICK_SHEATHE_RISE=0"})
             .arg(format!("-I{dir}/../../.cache/mhw_ls_animation_port"))
             .args(["-mcpu=cortex-a8","-marm","-mfloat-abi=softfp","-mfpu=vfpv3-d16","-O2","-fPIC","-ffreestanding","-fno-builtin","-fno-common","-Wall","-Wextra","-I"])
             .arg(format!("{dir}/c")).arg("-c").arg(format!("{dir}/c/{name}.c")).arg("-o").arg(&obj).status().unwrap();

@@ -3,6 +3,140 @@ Tanggal: 2026-11-25
 Build terakhir: sheathe-150-110
 
 ============================================================
+EKSPERIMEN (Quick Special Sheathe, source 0x5EE / slot 251)
+============================================================
+
+0. Riwayat identifikasi
+   - E3A005FE = mov r0,#1.0f, bukan motion: eksperimen 0x5FE direvert.
+   - Uji game: 0x5F9 = Special Sheathe tanpa skill; 0x5FA = ISS;
+     0x5F5 = Small Iai Slash; 0x5FE juga bukan quick.
+   - Disassembly cheat: aksi 0xF0 menerima motion 0x5EE atau 0x5F9.
+     Karena 0x5F9 adalah versi normal, 0x5EE (65 frame) adalah kandidat
+     versi quick.
+
+1. Animasi
+   - tools/prepare_quick_sheathe_rise_arc.py: --source-slot=238, --slot=251.
+     ARC sumber tetap baseline w07.arc.bak_before_qs_rise; action disalin ke
+     slot kosong 251 (motion internal 0x5FB). Hanya pointer direlokasi.
+   - ARC eksperimen aktif : arc/romfs/nativeNX/arc/player/quest/w07.arc
+     SHA256    : 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+   - Backup sebelum eksperimen:
+     arc original/romfs/nativeNX/arc/player/quest/w07.arc.bak_before_qs_rise
+   - Arsip eksperimen sebelumnya:
+     w07.arc.bak_qs_5f9 + mhw_ls_rebuild_quick_sheathe_5f9.nro
+     w07.arc.bak_qs_5fa + mhw_ls_rebuild_quick_sheathe_5fa.nro
+     w07.arc.bak_qs_5f5 + mhw_ls_rebuild_quick_sheathe_5f5.nro
+
+2. Plugin (flag build terpisah, build normal tidak berubah)
+   - world_core.c: source 306 -> clip {slot 251, 65 frame, event 339..344};
+     motion 0x5FB dikenali sebagai source 306.
+   - world_events.h: event 245..250 ke indeks 339..344, waktu x65/272.
+   - world_adapter.inc: multiplier 1.50/1.10 dimatikan untuk clip ini.
+   - moveset.h / gu_adapter.c / world_follow.inc: kembali ke attachment slot
+     230 (frame x 272/65). Percobaan memakai slot 238 membuat pedang menghadap
+     ke depan dan sarung tidak megang, jadi dibatalkan (hash NRO 186dcfb6...,
+     file tidak disimpan). Versi attachment slot 230 tetap diarsipkan sebagai
+     mhw_ls_rebuild_quick_5ee_attach230.nro.
+   - Semua eksperimen attachment (offset DX/DY/DZ, holster-blend, cutover,
+     pemetaan piecewise) sudah dibatalkan. Kembali ke versi awal port 0x5EE:
+     attachment slot 230 proporsional (frame x 272/65), tanpa offset dan
+     tanpa perubahan holster_pose(). Zoom kamera tidak diubah.
+   - Hash hasil restore persis sama dengan build 0x5EE awal
+     (d19916ac..., diarsipkan sebagai mhw_ls_rebuild_quick_initial_port.nro).
+   - Eksperimen lanjutan (rigid-lock pedang, W_QUICK_INSERT_AT, rotasi 180
+     derajat) dibatalkan. Arsip: mhw_ls_rebuild_quick_rigid_lock.nro,
+     mhw_ls_rebuild_quick_follow20.nro, mhw_ls_rebuild_quick_follow32.nro,
+     mhw_ls_rebuild_quick_flip180.nro.
+   - Log telemetri membuktikan pendekatan "sarung mengikuti pedang" salah:
+     pose pedang membeku di (23.19,-1.97,60.31), sedangkan sarung bergerak,
+     sehingga sarung ditarik ke pose lokal ekstrem (x~50-92).
+   - Percobaan koreksi: pedang yang mengikuti sarung setelah插入 selesai
+     (slot230 weapon motion 3 -> 0 di raw 80; W_QUICK_SYNC_AT = frame 20).
+     Offset pedang relatif terhadap sarung di-capture sekali, lalu pedang
+     = pose sarung saat ini x offset itu dengan joint 12 yang sama.
+     Arah/posisi masuk pedang tidak diputar; kedua objek memakai induk yang
+     sama sehingga gerakan hunter tidak bisa memisahkan mereka.
+   - Bug pada eksperimen "follow" lama (sample tertukar) sudah diperbaiki:
+     samples+0 = pedang (joint 8), samples+7 = sarung (joint 12).
+   - Konversi matriks->quaternion dikoreksi (tanda komponen vektor dan w).
+   - Telemetri sementara dihapus. Arsip: mhw_ls_rebuild_quick_sync_nodiag.nro,
+     mhw_ls_rebuild_quick_sync_diag.nro.
+   - Hasil uji: pedang sudah benar, sarung masih melayang di atas pedang.
+     Koreksi lanjutan: pose hasil yang sama (joint 12) dipakai untuk role 9
+     dan role 10, sehingga sarung ikut turun ke posisi pedang setelah插入.
+   - Versi dengan pedang benar/sarung melenceng diarsipkan sebagai
+     mhw_ls_rebuild_quick_sword_fixed.nro.
+   - Uji ulang: pedang pas di tangan, sarung tetap melayang di atas. Log yang
+     dikirim tidak punya data attachment (telemetri sudah dihapus).
+   - Telemetri terarah dipasang lagi: qs_state (joint/closed) serta qs_world
+     dan qs_local (posisi world/local x/y/z) untuk role 9 dan 10 pada 0x5FB.
+     Versi tanpa telemetri diarsipkan sebagai
+     mhw_ls_rebuild_quick_both_clean.nro.
+   - Log qs_world/qs_local membuktikan posisi world sarung dan pedang sudah
+     identik mulai frame ~4, jadi masalahnya orientasi, bukan posisi.
+   - Konversi matriks->quaternion dikembalikan ke konvensi yang dipakai
+     holster_pose() (tanda komponen seperti kode lama). Tanda yang sebelumnya
+     saya "koreksi" membuat pedang terbalik (ujung mengarah ke atas).
+   - Telemetri qs_* dihapus; versi dengan telemetri diarsipkan sebagai
+     mhw_ls_rebuild_quick_worlddiag.nro.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : ac284feb0114ba38b3b8479b2dbfdaf3c5ed8065f1c4ffddcb21de30ef57d926
+   - Atas permintaan user, kembali ke versi db2677b1... (pedang mengikuti
+     sarung, koreksi role 10 saja, tanda quaternion seperti versi tersebut).
+     Source dan NRO aktif sudah diselaraskan; rebuild menghasilkan hash yang
+     persis sama dengan arsip mhw_ls_rebuild_quick_sword_fixed.nro.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : db2677b1dffb878b7864debe14574e8b15ae186d04b73be6b9074374bfa43941
+   - Atas permintaan user, versi db2677b1... diberi telemetri posisi tanpa
+     mengubah perilaku: qs_state (joint/closed), qs_world (posisi world x/y/z),
+     qs_local (pose lokal x/y/z), qs_quat (quaternion lokal x/y/z/w) untuk
+     role 9 (sarung) dan 10 (pedang), satu sampel per 4 frame mentah.
+     Versi tanpa telemetri diarsipkan sebagai
+     mhw_ls_rebuild_quick_db2677_nolog.nro.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 07d6fd6756dfbeb0f2d644d52a86650bda0661317887030968df4c2a9b1c6174
+   - Log terbaru: pedang sudah tepat, sarung masih berselisih world ~5 unit
+     di sumbu Z (dan lebih besar di awal insertion). Atas permintaan user,
+     pose koreksi pedang dipakai juga untuk sarung (role 9 dan 10, joint 12),
+     dengan konvensi quaternion versi db2677b1..., tanpa rotasi/offset baru.
+     Versi sebelumnya diarsipkan sebagai
+     mhw_ls_rebuild_quick_db2677_log.nro.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 1932ba2ca19ea5d19286e799e4aecb6378f1f56bf16283ca6d54d17fb045e929
+   - Atas permintaan user, kembali ke versi 07d6fd67... (db2677 + telemetri,
+     koreksi role 10 saja). Source dan NRO aktif diselaraskan; rebuild menghasilkan
+     hash persis sama dengan arsip mhw_ls_rebuild_quick_db2677_log.nro.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 07d6fd6756dfbeb0f2d644d52a86650bda0661317887030968df4c2a9b1c6174
+   - Atas permintaan user, posisi pedang sekarang mengikuti posisi sarung:
+     translasi diambil dari sample sarung (samples+7, joint 12), sedangkan
+     rotasi tetap memakai orientasi masuk pedang yang sudah diverifikasi.
+     Tidak ada rotasi/offset baru; telemetri qs_* tetap aktif.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : 77e5af4d2c0275c66d14514301695d418c56c14aaaaacd581c4df4f4c054061f
+   - Koreksi lanjutan (sesuai pilihan user: sync tetap setelah insertion):
+     translasi pedang tidak lagi di-sampling ulang dari klip, tapi disalin
+     dari pose yang benar-benar dipakai objek sarung pada frame yang sama
+     (owner + epoch dicek). Rotasi tetap memakai orientasi masuk pedang.
+     Telemetri qs_* tetap aktif.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : dddd6a0ceccd213a59720481c86fd569d13675c20b7765152ffd1cf2ad2af11f
+   - Log build dddd6a0... membuktikan posisi local/world pedang == sarung
+     persis mulai frame ~24 (delta 0.000), tapi sudut relasi rotasi masih
+     konstan ~79.6 derajat (orientasi insert lama). Atas permintaan user,
+     rotasi pedang sekarang ikut disalin dari pose sarung (translation +
+     quaternion), sehingga sudut relasi menjadi 0. Fungsi quick_quat() dan
+     variabel Lo yang sudah tidak dipakai dihapus. Telemetri qs_* tetap aktif.
+   - NRO eksperimen aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256    : d3c52ccdd6a03ab0dca4fd029eec90afba0e8669345d2a95e29f82929d60da45
+   - Arsip NRO: arc original/romfs/nativeNX/plugins/mhw_ls_rebuild_quick_sheathe_rise.nro
+   - NRO tracked tetap baseline 1868d3e0...; check_relocations.py: PASS.
+
+3. Status: pengujian visual di game diperlukan. Untuk kembali ke baseline,
+   salin w07.arc.bak_before_qs_rise dan mhw_ls_rebuild_sheathe_150_110.nro
+   ke jalur aktif lalu build tanpa flag eksperimen.
+
+============================================================
 PERUBAHAN TERBARU (Special Sheathe tanpa skill 1.10x)
 ============================================================
 

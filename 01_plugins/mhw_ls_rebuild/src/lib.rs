@@ -39,12 +39,17 @@ fn main(){
     info!("[ml-rebuild] build=body-preview-1 scope=animation_probe combat_ready=0");
     #[cfg(ml_attachment_preview)]
     info!("[ml-rebuild] build=attachment-preview-1 scope=attachment_probe combat_ready=0");
+    #[cfg(ml_world_quick_sheathe_rise)]
+    info!("[ml-rebuild] experiment=quick_sheathe_rise motion=0x5ee speed_stack=0");
     let installed=unsafe{ml_install(base)};
     if installed==0 {error!("[ml-rebuild] native guards rejected; controller remains inactive");return;}
     BASE.store(base,Ordering::Relaxed);
     forge::install_hook!(base,sample_pad);
     forge::install_hook!(base,vib_play);
+    #[cfg(not(ml_world_quick_sheathe_rise))]
     info!("[ml-rebuild] installed; all styles; iai roll; sheath x1.50/1.10; iframe-2; native collision retained; rumble; chord-grace; lens-off");
+    #[cfg(ml_world_quick_sheathe_rise)]
+    info!("[ml-rebuild] installed; all styles; iai roll; sheath quick-0x5ee; iframe-2; native collision retained; rumble; chord-grace; lens-off");
 }
 
 

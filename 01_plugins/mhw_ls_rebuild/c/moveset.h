@@ -1,5 +1,16 @@
 #pragma once
 #include <stdint.h>
+#if ML_WORLD_QUICK_SHEATHE_RISE
+/* The quick clip is GU-native and has no generated attachment row. Reuse the
+ * ported Special Sheathe row (slot 230) by progress. */
+#define W_ATTACH_SLOT(motion) ((motion)==0x5fbu?230u:((motion)-0x500u))
+#define W_ATTACH_FRAME(motion,frame) ((motion)==0x5fbu?(frame)*(272.0f/65.0f):(frame))
+/* Quick frame where slot230 weapon motion goes 3 -> 0 (raw 80): insertion done. */
+#define W_QUICK_SYNC_AT 20.0f
+#else
+#define W_ATTACH_SLOT(motion) ((motion)-0x500u)
+#define W_ATTACH_FRAME(motion,frame) (frame)
+#endif
 
 enum { ML_NONE,ML_THRUST,ML_FADE_BACK,ML_FADE_LEFT,ML_FADE_RIGHT,
        ML_SPIRIT_STEP,ML_SPIRIT_III,ML_ROUND,ML_UPPER };

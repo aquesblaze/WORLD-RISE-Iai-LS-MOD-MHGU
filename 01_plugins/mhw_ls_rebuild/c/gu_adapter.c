@@ -90,13 +90,79 @@ static NativeCall original_placement,original_equipment_motion;
  * state across our temporary source attachment, including the cache pointer.
  * Otherwise source312 frame34 reparents the last hand offset onto the back. */
 static struct {u32 object,owner,active,pose[12],previous,joint,kind,cache;} attachment_native[2];
+static float att_sqrt(float v);
+#if ML_WORLD_QUICK_SHEATHE_RISE
+/* Keep the sword's authored insertion angle relative to the scabbard, then
+ * ride the animated scabbard so the two cannot drift. slot230:
+ * samples+0 = sword (joint 8), samples+7 = scabbard (joint 12). */
+static struct {void *owner;u32 epoch;unsigned ready;float t[16];} quick_sync;
+/* Exact translation handed to the scabbard object. The sword copies this
+ * value instead of resampling the clip, so it cannot land on a different
+ * frame/owner than the scabbard actually uses. */
+static struct {void *owner;u32 epoch;unsigned valid;float p[3],q[4];} quick_scabbard;
+static const float *quick_bone(void *a,u32 id)
+{
+    return ((const float *(*)(void *,u32))(*(uptr **)a)[0xd0/4])(a,id);
+}
+static void quick_rot(const float *q,float *r)
+{
+    float x=q[0],y=q[1],z=q[2],w=q[3];
+    float xx=x*x,yy=y*y,zz=z*z,xy=x*y,xz=x*z,yz=y*z,wx=w*x,wy=w*y,wz=w*z;
+    r[0]=1-2*(yy+zz);r[1]=2*(xy+wz);r[2]=2*(xz-wy);
+    r[4]=2*(xy-wz);r[5]=1-2*(xx+zz);r[6]=2*(yz+wx);
+    r[8]=2*(xz+wy);r[9]=2*(yz-wx);r[10]=1-2*(xx+yy);
+    r[3]=r[7]=r[11]=0;r[12]=r[13]=r[14]=0;r[15]=1;
+}
+static void quick_local(const float *p,const float *q,float *m)
+{
+    quick_rot(q,m);for(u32 i=0;i<3;++i)m[12+i]=p[i];
+}
+static void quick_mul(const float *m,const float *n,float *o)
+{
+    for(u32 c=0;c<4;++c)for(u32 r=0;r<4;++r){
+        float s=0;for(u32 k=0;k<4;++k)s+=m[k*4+r]*n[c*4+k];
+        o[c*4+r]=s;
+    }
+}
+static unsigned quick_inv(const float *m,float *o)
+{
+    float r[9];
+    for(u32 c=0;c<3;++c){
+        float x=m[c*4],y=m[c*4+1],z=m[c*4+2];
+        float nn=x*x+y*y+z*z;if(!(nn>.0001f))return 0;
+        float k;__asm__("vsqrt.f32 %0, %1":"=t"(k):"t"(nn));k=1/k;
+        r[c*3]=x*k;r[c*3+1]=y*k;r[c*3+2]=z*k;
+    }
+    for(u32 c=0;c<3;++c)for(u32 row=0;row<3;++row)o[c*4+row]=r[row*3+c];
+    o[3]=o[7]=o[11]=0;o[15]=1;
+    for(u32 row=0;row<3;++row){
+        float s=0;for(u32 k=0;k<3;++k)s+=o[k*4+row]*m[12+k];
+        o[12+row]=-s;
+    }
+    return 1;
+}
+/* selected: 1=sword (samples+0), 2=scabbard (samples+7). */
+static void quick_sample(const MLAttachmentClip *clip,u32 n,u32 next,float frac,unsigned selected,float *p,float *q)
+{
+    const float *x=ml_attachment_samples[clip->offset+n]+(selected-1)*7;
+    const float *y=ml_attachment_samples[clip->offset+next]+(selected-1)*7;
+    float dot=0,nn=0,len;
+    for(u32 i=0;i<3;++i)p[i]=x[i]+(y[i]-x[i])*frac;
+    for(u32 i=3;i<7;++i)dot+=x[i]*y[i];
+    float sign=dot<0?-1:1;
+    for(u32 i=3;i<7;++i){q[i-3]=x[i]+(sign*y[i]-x[i])*frac;nn+=q[i-3]*q[i-3];}
+    __asm__("vsqrt.f32 %0, %1":"=t"(len):"t"(nn));
+    if(len>.00001f)for(u32 i=0;i<4;++i)q[i]/=len;
+    else{q[0]=q[1]=q[2]=0;q[3]=1;}
+}
+#endif
 static unsigned attachment_pose(void *a,u32 role,float *out,u32 *joint,u32 *closed)
 {
-    u32 motion=u16(a,MOTION);float frame=real(a,FRAME);
+    u32 motion=u16(a,MOTION);float frame=W_ATTACH_FRAME(motion,real(a,FRAME));
     if((motion>>8)!=5||!(frame>=0&&frame<10000))return 0;
     const MLAttachmentClip *clip=0;
     for(u32 i=0;i<sizeof(ml_attachment_clips)/sizeof(*clip);++i)
-        if(ml_attachment_clips[i].slot==motion-0x500){clip=&ml_attachment_clips[i];break;}
+        if(ml_attachment_clips[i].slot==W_ATTACH_SLOT(motion)){clip=&ml_attachment_clips[i];break;}
     if(!clip)return 0;
     u32 n=(u32)frame;if(n>=clip->frames)n=clip->frames-1;
     *closed=ml_attachment_weapon_motion[clip->offset+n]==0;
@@ -115,6 +181,59 @@ static unsigned attachment_pose(void *a,u32 role,float *out,u32 *joint,u32 *clos
     if(!(len>0.00001f))return 0;
     for(u32 i=4;i<8;++i)out[i]/=len;
     out[8]=out[9]=out[10]=1;out[11]=0;*joint=selected==1?8:12;
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Remember the pose the scabbard itself is about to receive. */
+    if(motion==0x5fbu&&role==9){
+        quick_scabbard.owner=a;quick_scabbard.epoch=byte(a,AREA);
+        for(u32 i=0;i<3;++i)quick_scabbard.p[i]=out[i];
+        for(u32 i=0;i<4;++i)quick_scabbard.q[i]=out[4+i];
+        quick_scabbard.valid=1;
+    }
+    /* After insertion the sword copies the scabbard's full pose: same joint
+     * 12, translation and rotation, so the blade sits inside the sheath.
+     * slot230: samples+7 = scabbard (joint 12), samples+0 = sword (joint 8). */
+    if(motion==0x5fbu&&role==10){
+        float now=real(a,FRAME);
+        if(now<W_QUICK_SYNC_AT){
+            if(quick_sync.owner==a&&quick_sync.epoch==byte(a,AREA))quick_sync.ready=0;
+        }else{
+            float ps[3],qs[4],pw[3],qw[4];
+            quick_sample(clip,n,next,frac,2,ps,qs);   /* scabbard, joint 12 */
+            quick_sample(clip,n,next,frac,1,pw,qw);   /* sword,    joint 8  */
+            const float *b8=quick_bone(a,8),*b12=quick_bone(a,12);
+            if(b8&&b12){
+                float B8[16],B12[16],Lw[16],Ls[16],B12i[16],X[16],P[16],Lsi[16];
+                for(u32 i=0;i<16;++i){B8[i]=b8[i];B12[i]=b12[i];}
+                quick_local(pw,qw,Lw);
+                quick_local(ps,qs,Ls);
+                if(quick_sync.owner!=a||quick_sync.epoch!=byte(a,AREA)){
+                    quick_sync.owner=a;quick_sync.epoch=byte(a,AREA);quick_sync.ready=0;
+                }
+                if(!quick_sync.ready&&quick_inv(B12,B12i)){
+                    quick_mul(B12i,B8,X);   /* bone8 -> bone12 space */
+                    quick_mul(X,Lw,P);      /* sword pose in bone12 space */
+                    if(quick_inv(Ls,Lsi)){
+                        quick_mul(Lsi,P,quick_sync.t);  /* sword offset from scabbard */
+                        quick_sync.ready=1;
+                    }
+                }
+                if(quick_sync.ready){
+                    /* Copy the scabbard's real pose: translation and rotation,
+                     * so the sword cannot differ from it in any axis. */
+                    if(quick_scabbard.valid&&quick_scabbard.owner==a&&
+                       quick_scabbard.epoch==byte(a,AREA)){
+                        for(u32 i=0;i<3;++i)out[i]=quick_scabbard.p[i];
+                        for(u32 i=0;i<4;++i)out[4+i]=quick_scabbard.q[i];
+                    }else{
+                        for(u32 i=0;i<3;++i)out[i]=ps[i];
+                        for(u32 i=0;i<4;++i)out[4+i]=qs[i];
+                    }
+                    *joint=12;*closed=1;
+                }
+            }
+        }
+    }
+#endif
     return 1;
 }
 /* During 312 the authored hand selector disappears at frame 34. Preserve
@@ -194,6 +313,28 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
     put(object,0x13c8,word(object,0x13cc));put(object,0x13cc,joint);
     put(object,0x13d4,role==10||closed?2:1);put(object,0x1408,0);
     ((void (*)(void *,void *,u32))(*(uptr **)object)[0x48/4])(object,a,joint);
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Temporary placement telemetry for 0x5FB: role 9 = scabbard, 10 = sword.
+     * One sample per 4 frames per role; logging only, no pose changes. */
+    if(u16(a,MOTION)==0x5fbu){
+        static u32 qs_bucket[2];
+        u32 bucket=(u32)real(a,FRAME)/4u;
+        if(bucket!=qs_bucket[ix]){
+            const float *m=(const float *)((uptr)object+0xb0);
+            qs_bucket[ix]=bucket;
+            log_event("qs_state",(u32)(uptr)object,role,bucket,(joint<<16)|closed);
+            for(u32 i=0;i<3;++i){
+                log_event("qs_world",(u32)(uptr)object,role+i*3,
+                          *(u32 *)&m[12+i],word(object,0x13d0));
+                log_event("qs_local",(u32)(uptr)object,role+i*3,
+                          *(u32 *)&pose[i],0);
+                log_event("qs_quat",(u32)(uptr)object,role+i*3,
+                          *(u32 *)&pose[4+i],0);
+            }
+            log_event("qs_quat",(u32)(uptr)object,role+9,*(u32 *)&pose[7],0);
+        }
+    }
+#endif
     /* The outer native update still owns weapon animation, visibility,
      * matrix evaluation and its base update. Never run those twice. */
     return result;
@@ -202,11 +343,11 @@ static u32 preview_equipment_motion(void *object,u32 owner,u32 c,u32 d)
 {
     void *a=(void *)(uptr)owner;
     if(word(object,0x13d0)==9&&local_ls(a)){
-        unsigned motion=u16(a,MOTION);float frame=real(a,FRAME);
+        unsigned motion=u16(a,MOTION);float frame=W_ATTACH_FRAME(motion,real(a,FRAME));
         if((motion>>8)==5&&frame>=0&&frame<10000)
         for(unsigned i=0;i<sizeof(ml_attachment_clips)/sizeof(*ml_attachment_clips);++i){
             const MLAttachmentClip *clip=ml_attachment_clips+i;
-            if(clip->slot!=motion-0x500)continue;
+            if(clip->slot!=W_ATTACH_SLOT(motion))continue;
             unsigned n=(unsigned)frame;if(n>=clip->frames)n=clip->frames-1;
             int source=ml_attachment_weapon_motion[clip->offset+n];
             if(source<0||source>3)break;

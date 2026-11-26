@@ -61,6 +61,13 @@ float w_float(unsigned source,unsigned channel,float frame)
 
 const WClip *w_clip(unsigned source)
 {
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Experimental Quick Special Sheathe: action 0xf0 accepts motions 0x5ee
+     * and 0x5f9; in-game 0x5f9 is the no-skill sheathe and 0x5f5/0x5fa are
+     * Small Iai/ISS, so 0x5ee (65f) is the quick variant. Appended at slot 251.
+     * Event rows 339..344 are 245..250 scaled by 65/272. */
+    if(source==306){static const WClip quick={306u,251u,65u,339u,6u};return &quick;}
+#endif
     for(unsigned i=0;i<sizeof(world_clips)/sizeof(*world_clips);++i)
         if(world_clips[i].source==source)return world_clips+i;
     return 0;
@@ -87,6 +94,9 @@ unsigned w_source(unsigned motion)
 {
     if((motion>>8)!=5)return 0;
     unsigned n=motion-0x500;
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    if(n==251)return 306;
+#endif
     for(unsigned i=0;i<sizeof(world_clips)/sizeof(*world_clips);++i)
         if(world_clips[i].slot&&world_clips[i].slot==n)return world_clips[i].source;
     if(n>=101&&n<=108)return n;

@@ -319,6 +319,10 @@ static void world_cleanup(void *a)
 static float world_motion_speed(void *a,const WEvent *e)
 {
     float speed=w_float(world.source,W_FLOAT_SPEED,real(a,FRAME));
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* The Rise clip has its own short timing; do not stack 1.50/1.10. */
+    if(world.source==306&&world.slot==254)return speed;
+#endif
     if(world.move==W_SHEATHE&&(e->common2&0x80000u)){
         /* GU's ordinary sheath handler2cde38 recognizes the same four Quick
          * Sheathe sources and sets1.4. The stock World attenuation was0.4,
