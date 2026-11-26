@@ -319,10 +319,6 @@ static void world_cleanup(void *a)
 static float world_motion_speed(void *a,const WEvent *e)
 {
     float speed=w_float(world.source,W_FLOAT_SPEED,real(a,FRAME));
-#if ML_WORLD_QUICK_SHEATHE_RISE
-    /* The Rise clip has its own short timing; do not stack 1.50/1.10. */
-    if(world.source==306&&world.slot==254)return speed;
-#endif
     if(world.move==W_SHEATHE&&(e->common2&0x80000u)){
         /* GU's ordinary sheath handler2cde38 recognizes the same four Quick
          * Sheathe sources and sets1.4. The stock World attenuation was0.4,
@@ -330,7 +326,12 @@ static float world_motion_speed(void *a,const WEvent *e)
          * 1.50 with a Quick Sheathe skill, 1.10 without one. */
         unsigned (*skill)(void *,unsigned)=(void *)(main_base+0x2864c4);
         unsigned quick=skill(a,0x5d)||skill(a,0x13a)||skill(a,0x117)||skill(a,0x129);
+#if ML_WORLD_QUICK_SHEATHE_RISE
+        /* Quick Special Sheathe (source306): 1.30 instead of 1.50 with skill. */
+        speed*=quick?(world.source==306?1.30f:1.50f):1.00f;
+#else
         speed*=quick?1.50f:1.10f;
+#endif
     }
     return speed;
 }

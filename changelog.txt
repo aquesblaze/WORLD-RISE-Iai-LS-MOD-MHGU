@@ -793,11 +793,13 @@ O. Hybrid: animasi pedang versi sebelumnya + posisi versi sekarang
    - Verifikasi: build berflag PASS, build normal tanpa flag badcb85...,
      check_relocations.py PASS, diff --check PASS. Belum dites visual.
 
-V. Commit final (versi NRO 0f883ac9)
-   - Perubahan setelah O dicoba lalu dikembalikan (kecepatan, offset X,
-     telemetri tambahan tidak dipertahankan). Source dan NRO aktif kembali
-     persis ke versi O.
+V. Commit versi kecepatan 1.30 / 1.00
+   - world_adapter.inc (berflag): speed*=quick?(source306?1.30:1.50):1.00.
+     Skill Quick Sheathe: source306 = 1.30, sheathe biasa = 1.50.
+     Tanpa skill: 1.00. Build normal tetap 1.50/1.10.
    - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
-     SHA256: 0f883ac989269a3fe183595ab8ce0aafc7ad0e2eb9d900ffa3e4a21ef5f34e80
+     SHA256: 15e642581c48cd4438ceb5b3901360cafe5ae9de8db3108e230db6b655715a95
    - NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
    - Build normal tanpa flag: badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece
+   - Verifikasi: build berflag PASS, build normal PASS, check_relocations.py
+     PASS, diff --check PASS.
