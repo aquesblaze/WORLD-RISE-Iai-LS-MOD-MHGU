@@ -327,8 +327,10 @@ static float world_motion_speed(void *a,const WEvent *e)
         unsigned (*skill)(void *,unsigned)=(void *)(main_base+0x2864c4);
         unsigned quick=skill(a,0x5d)||skill(a,0x13a)||skill(a,0x117)||skill(a,0x129);
 #if ML_WORLD_QUICK_SHEATHE_RISE
-        /* Quick Special Sheathe (source306): 1.30 instead of 1.50 with skill. */
-        speed*=quick?(world.source==306?1.30f:1.50f):1.00f;
+        /* Quick Special Sheathe (source306): 1.30 instead of 1.50 with skill.
+         * Source313 is the old World clip used without the skill: keep its
+         * stock 1.10 no-skill rate instead of the experimental 1.00. */
+        speed*=quick?(world.source==306?1.30f:1.50f):(world.source==313?1.10f:1.00f);
 #else
         speed*=quick?1.50f:1.10f;
 #endif
@@ -664,10 +666,19 @@ static unsigned world_update(void *a,const MLObservation *b)
 #if ML_WORLD_PRESENTATION
     world_helm_line_tick(a);
 #endif
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    unsigned (*world_skill_fn)(void *,unsigned)=(void *)(main_base+0x2864c4);
+    unsigned world_quick_skill=world_skill_fn(a,0x5d)||world_skill_fn(a,0x13a)||
+                               world_skill_fn(a,0x117)||world_skill_fn(a,0x129);
+#endif
     WObservation o={.base=*b,.state=u16(a,STATE),.previous_weapon_action=u16(a,0x250c),.drawn=byte(a,DRAWN)&1,
         .alive=(int16_t)u16(a,HP)>0,.grounded=!(word(a,AIR)&0x400),
         .rank=((unsigned (*)(void *))(main_base+0x119ed80))(a),.resources_ready=world_ready(a),
-        .style=(unsigned)ls_style(a)};
+        .style=(unsigned)ls_style(a)
+#if ML_WORLD_QUICK_SHEATHE_RISE
+        ,.quick_skill=world_quick_skill
+#endif
+    };
     o.contact=world_contact(a);o.counter=world_counter_seen;
     /* 居合 GP 震动只在反击真的打中怪物时触发一次（counter 与 contact 同时成立）。 */
     if(world.move==W_BIG&&world.counter_success&&world.hit_success){

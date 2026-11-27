@@ -62,6 +62,10 @@ float w_float(unsigned source,unsigned channel,float frame)
 const WClip *w_clip(unsigned source)
 {
 #if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Old World Quick Special Sheathe: source 313 reuses the stock slot230
+     * 272f clip/events when the hunter has no Quick Sheathe skill. The ARC
+     * and world_events.h stay untouched; normal builds never see this id. */
+    if(source==313){static const WClip old={313u,230u,272u,245u,6u};return &old;}
     /* Experimental Quick Special Sheathe: try Rise slot 249 (92f) next.
      * It is appended at slot 251 (motion 0x5FB) without touching the stock
      * clip. w_event() supplies 245..250 scaled by 92/272 for this source. */
@@ -85,6 +89,13 @@ const WEvent *w_event(unsigned source,float frame)
         return landing+(frame>=(spirit?10:70));
     }
 #if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Source313 uses the stock 245..250 events at their original 272f frames. */
+    if(source==313){
+        if(!(frame>=0))return 0;
+        const WEvent *e=world_events+245;unsigned i=1;
+        while(i<6&&e[i].frame<=frame)++i;
+        return e+i-1;
+    }
     /* Rise slot249 is 92f. Keep the generated event table (and the normal
      * build) byte-identical; scale source306's 245..250 to the new length
      * only in this experimental build. */
@@ -159,7 +170,11 @@ unsigned w_guild_source(unsigned state,unsigned action,unsigned motion)
 }
 unsigned w_foresight_stage(unsigned source,const WEvent *e)
 {
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    if(!e||source==306||source==313||source==109||source==170)return 0;
+#else
     if(!e||source==306||source==109||source==170)return 0;
+#endif
     return (e->input[2]>>22)&3;
 }
 unsigned w_action(unsigned move){return move?239u+move:0;}
@@ -284,6 +299,11 @@ static WDecision enter(WState *s,const WObservation *o,unsigned move,unsigned ma
     unsigned previous=s->source;
     WDecision d=w_leave(s);d.kind=W_ENTER;d.move=move;
     s->move=move;s->rank=o->rank;s->source=source_for(move,o->rank);
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* With Quick Sheathe the Rise port keeps source306 (slot251). Without it
+     * the old World special sheathe uses source313 (stock slot230, 272f). */
+    if(move==W_SHEATHE&&!o->quick_skill)s->source=313u;
+#endif
     s->slot=w_clip(s->source)->slot;s->bound=0;s->last_frame=0;
     s->counter_success=s->hit_success=s->rank_paid=s->follow_ready=0;
     s->hold_seconds=0;s->consumed|=mask;s->queued=0;

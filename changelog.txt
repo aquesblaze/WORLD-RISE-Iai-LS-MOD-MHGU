@@ -829,3 +829,26 @@ AE. Roll X 180 derajat pedang saja, tanpa kode lain
      SHA256: fc6fde7d49141be09fe7332130c421bf40264d28cfe76842cc49bf4480538a40
    - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
    - check_relocations.py PASS, git diff --check PASS. Belum commit/push.
+
+AF. Special Sheathe tanpa skill quick sheath memakai klip World/old
+   - Berangkat dari HEAD c387830 (versi push terakhir). Asumsi "world/old" =
+     klip stok source306, slot230, 272 frame, event 245..250 (sebelum port
+     Rise), bukan klip Rise slot251.
+   - world_adapter.inc: skill quick sheath dideteksi di awal world_tick via
+     skill(a,0x5d/0x13a/0x117/0x129), hasilnya disimpan ke
+     WObservation.quick_skill (field baru hanya di bawah flag).
+   - world_core.c: source313 baru (hanya di bawah flag) memakai klip stok
+     slot230/272f dan event 245..250 pada frame aslinya. enter() memilih
+     source313 untuk W_SHEATHE bila !quick_skill; bila skill ada tetap
+     source306/Rise slot251. w_foresight_stage() juga mengabaikan source313.
+   - world_adapter.inc: source313 memakai kecepatan no-skill stok 1.10
+     (bukan 1.00 eksperimen); source306 dengan skill tetap 1.30.
+   - world_events.h tidak diubah, ARC tidak diubah, telemetri qs_* tidak
+     diubah, rotasi X 180 derajat di 0x5FB tidak diubah. Klip lama memakai
+     motion 0x5EE sehingga jalur khusus 0x5FB tidak aktif.
+   - Build normal tanpa flag tetap byte-identik
+     badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece.
+   - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256: 6c19daa3e152341e618958a6541ccadc6a6ec438e27d1632edb0f01d91d62552
+   - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+   - check_relocations.py PASS, git diff --check PASS. Belum commit/push.

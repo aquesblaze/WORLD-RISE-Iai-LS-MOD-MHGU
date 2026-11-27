@@ -25,6 +25,9 @@ typedef struct {
     MLObservation base;
     unsigned state,drawn,alive,grounded,rank,contact,counter,resources_ready;
     unsigned previous_weapon_action,style;
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    unsigned quick_skill;
+#endif
 } WObservation;
 typedef struct {
     unsigned kind,move,source,slot,native_action,heading;
