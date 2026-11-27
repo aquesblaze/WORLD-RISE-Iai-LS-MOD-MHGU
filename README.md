@@ -4,20 +4,25 @@
 
 This project is a **fork of Akumi v1.1** ([MHW-Long-Sword-Moveset-for-MHGU](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU)). Its goal is to recreate the **Monster Hunter Rise Long Sword experience** inside **Monster Hunter Generations Ultimate (MHGU) Recomp** by porting Rise-style animations, timing, and weapon handling into the existing Akumi moveset.
 
-This is an experimental, work-in-progress fork. It works with **all Hunter Styles** (Guild, Adept, Aerial, Valor, Alchemy, and others). The ready-to-install bundle is under `Rise-LS-MHGU/romfs/`. It is not a complete conversion of Rise, is not affiliated with CAPCOM or the original Akumi project, and does not replace the original game assets.
+This is an experimental, work-in-progress fork. It works with **all Hunter Styles** (Guild, Striker, Adept, Aerial, Valor, Alchemy). The ready-to-install bundle is under `Rise-LS-MHGU/romfs/`. It is not a complete conversion of Rise, is not affiliated with CAPCOM or the original Akumi project, and does not replace the original game assets.
 
 ## Relationship to Akumi v1.1
 
 The baseline is Akumi v1.1 (internal v11 optimizations with the v13 blade trail retained). The original v1.1 feature set, controls, and structure are preserved wherever possible. Changes in this fork are kept behind separate build flags so the original baseline build remains reproducible.
 
-## Goal
+## Implemented Features
 
 Bring the Long Sword closer to its Rise counterpart:
 
+- Iai Spirit Slash mechanics follow Rise's rule set.
 - Rise-style Quick Special Sheathe animation and blade direction.
 - Smooth transition from the sheath swing into the iai stance.
 - Skill-aware behavior: Quick Sheathe skill uses the Rise clip; without the skill, the older World special sheathe clip is used.
 - Familiar Rise-like flow for Foresight Slash, iai counters, Spirit Helm Breaker, and camera presentation.
+
+## To Do
+
+- Rebalance the damage values of this Long Sword moveset to follow MHGU damage values, since the mechanics already follow Rise.
 
 ## Current experimental flag
 
