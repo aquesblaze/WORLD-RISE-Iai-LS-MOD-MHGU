@@ -4,7 +4,7 @@
 
 This project is a **fork of Akumi v1.1** ([MHW-Long-Sword-Moveset-for-MHGU](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU)). Its goal is to recreate the **Monster Hunter Rise Long Sword experience** inside **Monster Hunter Generations Ultimate (MHGU) Recomp** by porting Rise-style animations, timing, and weapon handling into the existing Akumi moveset.
 
-This is an experimental, work-in-progress fork. It is not a complete conversion of Rise, is not affiliated with CAPCOM or the original Akumi project, and does not replace the original game assets.
+This is an experimental, work-in-progress fork. It works with **all Hunter Styles** (Guild, Adept, Aerial, Valor, Alchemy, and others). The ready-to-install bundle is under `Rise-LS-MHGU/romfs/`. It is not a complete conversion of Rise, is not affiliated with CAPCOM or the original Akumi project, and does not replace the original game assets.
 
 ## Relationship to Akumi v1.1
 
@@ -39,19 +39,19 @@ A normal build without `ML_WORLD_QUICK_SHEATHE_RISE` keeps the original Akumi v1
 ## Installation
 
 1. Build or copy the plugin NRO.
-2. Place `mhw_ls_rebuild.nro` under `romfs/nativeNX/plugins/`.
-3. Copy the `romfs` folder into the game's `mods/MHW_WORLD_DEV/` directory.
-4. Restart the emulator or game after replacing the NRO or ARC files.
-5. Use Guild Style Long Sword.
+2. Place `mhw_ls_rebuild.nro` under `Rise-LS-MHGU/romfs/nativeNX/plugins/`.
+3. Copy the `Rise-LS-MHGU/romfs` folder into the game's `mods/MHW_WORLD_DEV/` directory.
+4. Restart the emulator or game after replacing any NRO or ARC file in that folder.
+5. Use Long Sword in any Hunter Style.
 
 Do not stack this mod with another Long Sword moveset or duplicate plugin build.
 
 ## Controls
 
-- `R + A` — Foresight Slash
-- `R + B` — Special Sheathe
-- `R + X` — Spirit Thrust
-- After Special Sheathe: `X` — Small Iai Slash, `R` — Big Iai Slash
+- `ZR + A` — Foresight Slash
+- `ZR + B` — Special Sheathe
+- `ZR + X` — Spirit Thrust
+- After Special Sheathe: `X` — Small Iai Slash, `ZR` — Big Iai Slash
 - After a successful Spirit Thrust hit — Spirit Helm Breaker
 
 ## Credits

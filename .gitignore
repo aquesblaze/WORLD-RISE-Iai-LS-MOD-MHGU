@@ -4,7 +4,7 @@
 # The release NRO is shipped with the repo; diagnostic NROs stay ignored.
 !01_plugins/mhw_ls_rebuild/mhw_ls_rebuild.nro
 # The assembled mod bundle ships its own plugin NRO.
-!arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+!Rise-LS-MHGU/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
 
 # Local caches. Keep only the generated header required by build.rs.
 .cache/*
