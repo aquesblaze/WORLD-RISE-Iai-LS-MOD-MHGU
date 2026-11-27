@@ -4,10 +4,10 @@
 /* The quick clip is GU-native and has no generated attachment row. Reuse the
  * ported Special Sheathe row (slot 230) by progress. */
 #define W_ATTACH_SLOT(motion) ((motion)==0x5fbu?230u:((motion)-0x500u))
-#define W_ATTACH_FRAME(motion,frame) ((motion)==0x5fbu?(frame)*(272.0f/92.0f):(frame))
-/* Quick frame where slot230 weapon motion goes 3 -> 0 (raw 80): insertion done.
- * Scaled from the pushed 65f build to the current 92f Rise clip. */
-#define W_QUICK_SYNC_AT 27.058824f
+#define W_ATTACH_FRAME(motion,frame) ((motion)==0x5fbu?(frame)*(272.0f/65.0f):(frame))
+/* Quick frame where slot230 weapon motion goes 3 -> 0 (raw 80 scaled to the
+ * 65f Rise clip actually present in w07.arc): insertion done. */
+#define W_QUICK_SYNC_AT 19.117647f
 #else
 #define W_ATTACH_SLOT(motion) ((motion)-0x500u)
 #define W_ATTACH_FRAME(motion,frame) (frame)

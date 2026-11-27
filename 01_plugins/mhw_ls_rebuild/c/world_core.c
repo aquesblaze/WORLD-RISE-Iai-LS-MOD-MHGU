@@ -66,10 +66,10 @@ const WClip *w_clip(unsigned source)
      * 272f clip/events when the hunter has no Quick Sheathe skill. The ARC
      * and world_events.h stay untouched; normal builds never see this id. */
     if(source==313){static const WClip old={313u,230u,272u,245u,6u};return &old;}
-    /* Experimental Quick Special Sheathe: try Rise slot 249 (92f) next.
-     * It is appended at slot 251 (motion 0x5FB) without touching the stock
-     * clip. w_event() supplies 245..250 scaled by 92/272 for this source. */
-    if(source==306){static const WClip quick={306u,251u,92u,339u,6u};return &quick;}
+    /* Experimental Quick Special Sheathe: Rise slot 238 (65f) appended at
+     * slot 251 (motion 0x5FB), matching the w07.arc actually shipped.
+     * Event rows 339..344 are 245..250 scaled by 65/272. */
+    if(source==306){static const WClip quick={306u,251u,65u,339u,6u};return &quick;}
 #endif
     for(unsigned i=0;i<sizeof(world_clips)/sizeof(*world_clips);++i)
         if(world_clips[i].source==source)return world_clips+i;
@@ -96,23 +96,8 @@ const WEvent *w_event(unsigned source,float frame)
         while(i<6&&e[i].frame<=frame)++i;
         return e+i-1;
     }
-    /* Rise slot249 is 92f. Keep the generated event table (and the normal
-     * build) byte-identical; scale source306's 245..250 to the new length
-     * only in this experimental build. */
-    if(source==306){
-        if(!(frame>=0))return 0;
-        static const WEvent quick[]={
-            {0.000000f,{0u,0u,0u,0u,0u,0u,0u},37748736u,524288u,0u,1.000000f,0u,0.000000f,-1},
-            {3.382353f,{0u,0u,0u,0u,0u,0u,0u},54525952u,557056u,0u,1.000000f,0u,0.000000f,-1},
-            {5.073529f,{0u,0u,0u,0u,0u,0u,0u},54525958u,557056u,0u,1.000000f,0u,0.000000f,-1},
-            {21.985294f,{65536u,4096u,0u,0u,0u,0u,0u},54525958u,557056u,0u,1.000000f,0u,0.000000f,-1},
-            {24.691176f,{65536u,4096u,0u,0u,0u,0u,0u},54525958u,32768u,1024u,1.000000f,1u,0.000000f,-1},
-            {27.058824f,{196608u,12288u,0u,0u,0u,0u,0u},54525958u,32768u,1024u,1.000000f,1u,0.000000f,-1}
-        };
-        const WEvent *e=quick;unsigned i=1;
-        while(i<sizeof(quick)/sizeof(*quick)&&e[i].frame<=frame)++i;
-        return e+i-1;
-    }
+    /* Source306 now uses the generated rows 339..344 (245..250 scaled to
+     * the 65f clip) through the generic lookup below. No event override. */
 #endif
     const WClip *c=w_clip(source);if(!c||!(frame>=0))return 0;
     const WEvent *e=world_events+c->offset;unsigned i=1;

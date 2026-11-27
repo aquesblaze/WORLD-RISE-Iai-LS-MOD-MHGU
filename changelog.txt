@@ -864,3 +864,21 @@ AG. Kecepatan Special Sheathe tanpa skill diturunkan 1.10 -> 1.00
      SHA256: 72a8271f603d79ddf377331bccf30954d1a73afa2477fb71fdb707d83560c6ff
    - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
    - check_relocations.py PASS, git diff --check PASS. Belum commit/push.
+
+AH. Samakan panjang klip quick ke ARC (65f) supaya animasi mulus
+   - Berangkat dari commit f251b64. Akar masalah: w07.arc aktif berisi klip
+     slot251 65 frame, tetapi source mengira 92 frame (W_ATTACH_FRAME
+     x272/92, event hardcode 3.38/5.07/21.98/24.69/27.06). Event insertion
+     dan attachment jadi terlambat/terpotong.
+   - moveset.h: W_ATTACH_FRAME(0x5FB) kembali x272/65; W_QUICK_SYNC_AT
+     menjadi 19.117647f (raw 80 diskalakan 65/272), bukan 27.058824f.
+   - world_core.c: w_clip(306) panjang 65 (offset 339 tetap); event source306
+     tidak lagi memakai tabel hardcode 92f, memakai baris generated 339..344
+     lewat lookup biasa. Source313/World-old tidak berubah.
+   - Rotasi X 180 derajat, telemetri qs_*, flag build, ARC, world_events.h,
+     dan zoom kamera tidak diubah. Build normal tetap byte-identik
+     badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece.
+   - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256: 50f3abe3f2e471c1815d49f922c2981a45ba02a5ef336bc44fe68c6fa62f80b8
+   - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+   - check_relocations.py PASS, git diff --check PASS. Belum commit/push.
