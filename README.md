@@ -44,10 +44,9 @@ A normal build without `ML_WORLD_QUICK_SHEATHE_RISE` keeps the original Akumi v1
 ## Installation
 
 1. Build or copy the plugin NRO.
-2. Place `mhw_ls_rebuild.nro` under `Rise-LS-MHGU/romfs/nativeNX/plugins/`.
-3. Copy the `Rise-LS-MHGU/romfs` folder into the game's `mods/MHW_WORLD_DEV/` directory.
-4. Restart the emulator or game after replacing any NRO or ARC file in that folder.
-5. Use Long Sword in any Hunter Style.
+2. Copy the `Rise-LS-MHGU` folder into the game's `mods/` directory.
+3. Restart the emulator or game after replacing any NRO or ARC file in that folder.
+4. Use Long Sword in any Hunter Style.
 
 Do not stack this mod with another Long Sword moveset or duplicate plugin build.
 
