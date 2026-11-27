@@ -814,3 +814,18 @@ AD. Kembali ke file romfs/ bertimestamp 26 Nov (permintaan user)
      (sama dengan NRO versi push).
    - NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
    - check_relocations.py PASS. Belum dites visual. Belum commit/push.
+
+AE. Roll X 180 derajat pedang saja, tanpa kode lain
+   - Berangkat dari HEAD 4de4b25. Di preview_placement(), tepat setelah
+     attachment_pose()/holster_pose(), ditambahkan 8 baris untuk role9
+     (pedang menurut pemetaan visual user), motion 0x5FB, frame <
+     W_QUICK_SYNC_AT: quaternion q diganti q * (1,0,0,0), yaitu rotasi 180
+     derajat sekitar sumbu X lokal pedang.
+   - Tidak ada translasi, joint, helper, konjugasi bone, atau perubahan role10
+     (sarung). Telemetri qs_* dan build normal tidak diubah.
+   - Build normal tanpa flag tetap
+     badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece.
+   - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256: fc6fde7d49141be09fe7332130c421bf40264d28cfe76842cc49bf4480538a40
+   - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+   - check_relocations.py PASS, git diff --check PASS. Belum commit/push.

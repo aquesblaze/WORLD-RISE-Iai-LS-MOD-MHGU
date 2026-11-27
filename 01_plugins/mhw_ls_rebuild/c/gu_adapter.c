@@ -311,6 +311,18 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
     }
     if(attachment_pose(a,role,pose,&joint,&closed))holster[ix].object=0;
     else if(!holster_pose(a,object,ix,prior,pose,&joint,&closed))return result;
+#if ML_WORLD_QUICK_SHEATHE_RISE
+    /* Role9 = pedang (pemetaan visual user). Roll 180 degrees about its own
+     * local X: pose quaternion q becomes q * (1,0,0,0). Translation, joint,
+     * sync, and role10 (sarung) are untouched. Swing only. */
+    if(u16(a,MOTION)==0x5fbu&&role==9){
+        float f=real(a,FRAME);
+        if(f>=0.0f&&f<W_QUICK_SYNC_AT){
+            float x=pose[4],y=pose[5],z=pose[6],w=pose[7];
+            pose[4]=w;pose[5]=z;pose[6]=-y;pose[7]=-x;
+        }
+    }
+#endif
     attachment_native[ix].object=(u32)(uptr)object;attachment_native[ix].owner=owner;
     for(unsigned i=0;i<12;++i)attachment_native[ix].pose[i]=word(object,0x40+4*i);
     attachment_native[ix].previous=word(object,0x13c8);
