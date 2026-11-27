@@ -852,3 +852,15 @@ AF. Special Sheathe tanpa skill quick sheath memakai klip World/old
      SHA256: 6c19daa3e152341e618958a6541ccadc6a6ec438e27d1632edb0f01d91d62552
    - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
    - check_relocations.py PASS, git diff --check PASS. Belum commit/push.
+
+AG. Kecepatan Special Sheathe tanpa skill diturunkan 1.10 -> 1.00
+   - Berangkat dari commit 014c14a. Di world_adapter.inc, cabang
+     ML_WORLD_QUICK_SHEATHE_RISE: source313 (klip World/old tanpa skill)
+     tidak lagi memakai 1.10, ikut memakai 1.00 seperti kasus no-skill lain.
+   - source306 dengan skill tetap 1.30; build normal tanpa flag tetap 1.10
+     dan byte-identik badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece.
+   - ARC tidak diubah, world_events.h tidak diubah, rotasi 0x5FB tidak diubah.
+   - NRO aktif: arc/romfs/nativeNX/plugins/mhw_ls_rebuild.nro
+     SHA256: 72a8271f603d79ddf377331bccf30954d1a73afa2477fb71fdb707d83560c6ff
+   - ARC tetap 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+   - check_relocations.py PASS, git diff --check PASS. Belum commit/push.

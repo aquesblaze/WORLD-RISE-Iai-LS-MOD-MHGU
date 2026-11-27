@@ -328,9 +328,8 @@ static float world_motion_speed(void *a,const WEvent *e)
         unsigned quick=skill(a,0x5d)||skill(a,0x13a)||skill(a,0x117)||skill(a,0x129);
 #if ML_WORLD_QUICK_SHEATHE_RISE
         /* Quick Special Sheathe (source306): 1.30 instead of 1.50 with skill.
-         * Source313 is the old World clip used without the skill: keep its
-         * stock 1.10 no-skill rate instead of the experimental 1.00. */
-        speed*=quick?(world.source==306?1.30f:1.50f):(world.source==313?1.10f:1.00f);
+         * Source313 is the old World clip used without the skill: 1.00. */
+        speed*=quick?(world.source==306?1.30f:1.50f):1.00f;
 #else
         speed*=quick?1.50f:1.10f;
 #endif
