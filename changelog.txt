@@ -803,3 +803,14 @@ V. Commit versi kecepatan 1.30 / 1.00
    - Build normal tanpa flag: badcb85a664b576dd7fb09667962d9a1c5426ed7eb50584bcb25a5f8512d8ece
    - Verifikasi: build berflag PASS, build normal PASS, check_relocations.py
      PASS, diff --check PASS.
+
+AD. Kembali ke file romfs/ bertimestamp 26 Nov (permintaan user)
+   - Sumber: romfs/nativeNX/arc/player/quest/w07.arc (17:46:48) dan
+     romfs/nativeNX/plugins/mhw_ls_rebuild.nro (21:48:56).
+   - ARC aktif: arc/romfs/nativeNX/arc/player/quest/w07.arc
+     SHA256: 4e915f7510900f49fb612518d0843d5487ddf99d3320232ec5ce8fc4ba7b2cc2
+     Slot 251 = 65 frame (sumber Rise slot 238), bukan 92 frame seperti HEAD.
+   - NRO aktif: 15e642581c48cd4438ceb5b3901360cafe5ae9de8db3108e230db6b655715a95
+     (sama dengan NRO versi push).
+   - NRO tracked: 1868d3e030141896a9451c7f0a8f49da5a7eb84d8751d42568d5ef23d68ee3ee
+   - check_relocations.py PASS. Belum dites visual. Belum commit/push.
