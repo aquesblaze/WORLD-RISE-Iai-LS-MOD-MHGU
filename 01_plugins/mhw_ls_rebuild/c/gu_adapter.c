@@ -92,6 +92,23 @@ static NativeCall original_placement,original_equipment_motion;
 static struct {u32 object,owner,active,pose[12],previous,joint,kind,cache;} attachment_native[2];
 static float att_sqrt(float v);
 #if ML_WORLD_QUICK_SHEATHE_RISE
+/* Iai stance reference pose: slot238 frame100 set1, rotated 180 degrees about
+ * local X. The object origin is the hilt. */
+static unsigned quick_iai_pose(float *p,float *q,u32 role)
+{
+    const MLAttachmentClip *iai=0;
+    for(u32 i=0;i<sizeof(ml_attachment_clips)/sizeof(*iai);++i)
+        if(ml_attachment_clips[i].slot==238u){iai=&ml_attachment_clips[i];break;}
+    if(!iai)return 0;
+    u32 n=100;if(n>=iai->frames)n=iai->frames-1;
+    const float *s=ml_attachment_samples[iai->offset+n];
+    for(u32 i=0;i<3;++i)p[i]=s[i];
+    for(u32 i=0;i<4;++i)q[i]=s[3+i];
+    float x=q[0],y=q[1],z=q[2],w=q[3];
+    q[0]=w;q[1]=z;q[2]=-y;q[3]=-x;
+    (void)role;
+    return 1;
+}
 /* Keep the sword's authored insertion angle relative to the scabbard, then
  * ride the animated scabbard so the two cannot drift. slot230:
  * samples+0 = sword (joint 8), samples+7 = scabbard (joint 12). */
@@ -322,6 +339,41 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
             pose[4]=w;pose[5]=z;pose[6]=-y;pose[7]=-x;
         }
     }
+    /* Iai stance: use the slot238 frame100 pose and parent it to the right
+     * palm. The in-game reference shows the hilt sitting at joint 12, so the
+     * hilt (object origin) is placed on that joint. */
+    {
+        u32 motion=u16(a,MOTION);
+        int iai=(motion==0x5fbu&&real(a,FRAME)>=W_QUICK_SYNC_AT)||
+                (motion==0x5eeu&&u16(a,ACTION)!=0xf7u);
+        if(iai&&quick_iai_pose(pose,pose+4,role)){
+            /* Shift the pivot 6 units to the left (local -X) of the palm. */
+            pose[0]=-6.0f;pose[1]=0.0f;pose[2]=0.0f;
+            /* Yaw the sword and scabbard 160 degrees about the palm. The
+             * object origin is the hilt, so the pivot stays on the palm. */
+            const float s=0.984807753f,c=0.173648178f;
+            float x=pose[4],y=pose[5],z=pose[6],w=pose[7];
+            pose[4]=c*x+s*z;pose[5]=c*y+s*w;
+            pose[6]=c*z-s*x;pose[7]=c*w-s*y;
+            /* Roll 90 degrees about the blade's long axis (local Z). The tip
+             * stays on the same line; only the edge orientation turns. */
+            const float r=0.707106781f;
+            x=pose[4];y=pose[5];z=pose[6];w=pose[7];
+            pose[4]=r*(x+y);pose[5]=r*(y-x);
+            pose[6]=r*(w+z);pose[7]=r*(w-z);
+            /* Tilt 15 degrees about local X. */
+            const float sx=0.130526192f,cx=0.991444861f;
+            x=pose[4];y=pose[5];z=pose[6];w=pose[7];
+            pose[4]=cx*x+sx*w;pose[5]=cx*y+sx*z;
+            pose[6]=cx*z-sx*y;pose[7]=cx*w-sx*x;
+            /* Tilt 2 degrees downward about local Y. */
+            const float sy=0.017452406f,cy=0.999847695f;
+            x=pose[4];y=pose[5];z=pose[6];w=pose[7];
+            pose[4]=cy*x+sy*z;pose[5]=cy*y+sy*w;
+            pose[6]=cy*z-sy*x;pose[7]=cy*w-sy*y;
+            joint=12;
+        }
+    }
 #endif
     attachment_native[ix].object=(u32)(uptr)object;attachment_native[ix].owner=owner;
     for(unsigned i=0;i<12;++i)attachment_native[ix].pose[i]=word(object,0x40+4*i);
@@ -370,6 +422,31 @@ static u32 preview_placement(void *object,u32 owner,u32 role,u32 flags)
                     }
                     float distance=att_sqrt(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2]);
                     log_event("qs_pair",(u32)(uptr)a,*(u32 *)&distance,frame,0);
+                }
+            }
+        }
+    }
+    /* Iai stance telemetry: palms, sword hilt and blade tip.
+     * x=20..22 bone8 (other arm), 23..25 bone12 (right palm holding the
+     * hilt), 26..28 role9 object origin (hilt), 29..31 blade tip
+     * (role9 object world * qs_tip_local). z=frame. Logging only. */
+    {
+        u32 motion=u16(a,MOTION),frame=(u32)real(a,FRAME);
+        int stance=motion==0x5fbu?frame>=W_QUICK_SYNC_AT:
+                   motion==0x5eeu&&u16(a,ACTION)!=0xf7u;
+        static u32 qs_stance_bucket;
+        u32 key=(motion<<16)|(frame&0xffffu);
+        if(stance&&role==9&&key!=qs_stance_bucket){
+            const float *m8=quick_bone(a,8),*m12=quick_bone(a,12);
+            if(m8&&m12){
+                const float *ow=(const float *)((uptr)object+0xb0);
+                float tip[3];qs_point(ow,qs_tip_local,tip);
+                qs_stance_bucket=key;
+                for(u32 i=0;i<3;++i){
+                    log_event("qs_world",(u32)(uptr)a,20+i,*(u32 *)&m8[12+i],frame);
+                    log_event("qs_world",(u32)(uptr)a,23+i,*(u32 *)&m12[12+i],frame);
+                    log_event("qs_world",(u32)(uptr)a,26+i,*(u32 *)&ow[12+i],frame);
+                    log_event("qs_world",(u32)(uptr)a,29+i,*(u32 *)&tip[i],frame);
                 }
             }
         }
