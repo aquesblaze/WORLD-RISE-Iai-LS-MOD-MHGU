@@ -2,13 +2,9 @@
 
 ## Overview
 
-This project is a **fork of Akumi v1.1** ([MHW-Long-Sword-Moveset-for-MHGU](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU)). Its goal is to recreate the **Monster Hunter Rise Long Sword experience** inside **Monster Hunter Generations Ultimate (MHGU) Recomp** by porting Rise-style animations, timing, and weapon handling into the existing Akumi moveset.
+This project is a **fork of Akumi-xu v1.1** ([MHW-Long-Sword-Moveset-for-MHGU](https://github.com/Akumi-xu/MHW-Long-Sword-Moveset-for-MHGU)). Its goal is to recreate the **Monster Hunter Rise Long Sword experience** inside **Monster Hunter Generations Ultimate (MHGU) Recomp** by porting Rise-style animations, timing, and weapon handling into the existing Akumi-xu moveset.
 
-This is an experimental, work-in-progress fork. It works with **all Hunter Styles** (Guild, Striker, Adept, Aerial, Valor, Alchemy). The ready-to-install bundle is under `Rise-LS-MHGU/romfs/`. It is not a complete conversion of Rise, is not affiliated with CAPCOM or the original Akumi project, and does not replace the original game assets.
-
-## Relationship to Akumi v1.1
-
-The baseline is Akumi v1.1 (internal v11 optimizations with the v13 blade trail retained). The original v1.1 feature set, controls, and structure are preserved wherever possible. Changes in this fork are kept behind separate build flags so the original baseline build remains reproducible.
+This is an experimental, work-in-progress fork. It works with **all Hunter Styles** (Guild, Striker, Adept, Aerial, Valor, Alchemy). The ready-to-install bundle is under `Rise-LS-MHGU/`.
 
 ## Implemented Features
 
@@ -43,12 +39,10 @@ A normal build without `ML_WORLD_QUICK_SHEATHE_RISE` keeps the original Akumi v1
 
 ## Installation
 
-1. Build or copy the plugin NRO.
-2. Copy the `Rise-LS-MHGU` folder into the game's `mods/` directory.
-3. Restart the emulator or game after replacing any NRO or ARC file in that folder.
-4. Use Long Sword in any Hunter Style.
+1. Copy the `Rise-LS-MHGU` folder into the game's `mods/` directory.
+2. Use Long Sword in any Hunter Style.
 
-Do not stack this mod with another Long Sword moveset or duplicate plugin build.
+Do not stack this mod with another Long Sword Mod or duplicate plugin build.
 
 ## Controls
 
@@ -64,4 +58,3 @@ Do not stack this mod with another Long Sword moveset or duplicate plugin build.
 - Port and experimental changes in this fork: repository contributors.
 - Original game assets and characters belong to **CAPCOM**.
 
-The previous Chinese README content is preserved in the repository history.
