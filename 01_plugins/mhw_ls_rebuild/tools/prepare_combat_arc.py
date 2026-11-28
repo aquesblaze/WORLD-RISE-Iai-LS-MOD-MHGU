@@ -110,19 +110,19 @@ def main():
                 record=bytearray(template);attack=nodes[key]['attack'];mv=attack['Motion_Value']
                 if int(mv)!=mv:raise ValueError('Fractional source MV needs native scaling')
                 # Helm Breaker rebalance: white 10 -> 8, yellow 15 -> 10 and
-                # red 25 -> 13 MV per hit. The plugin patches the old source
+                # red 25 -> 15 MV per hit. The plugin patches the old source
                 # values so a stale deployed ARC and a regenerated one agree.
-                helm_mv={1001:8,1002:10,1003:13,1021:8,1022:10,1023:13}
+                helm_mv={1001:8,1002:10,1003:15,1021:8,1022:10,1023:15}
                 if key in helm_mv:mv=helm_mv[key]
                 struct.pack_into('<HHI',record,0,0,1,int(mv));struct.pack_into('<I',record,48,int(mv))
                 # Native368960 transfers these to collider94/98; element/status
                 # scaling uses94 (374b48/3781c4), monster reaction uses98->142c.
                 if abs(attack['Elemental_Modifier']-attack['Status_Modifier'])>1e-5:
                     raise ValueError('Separate element/status scaling required')
-                # Hits1-3 / 4-6 / 7 get 0.3 / 0.4 / 0.6. Row101x is the Iai
+                # Hits1-3 / 4-6 / 7 get 0.0 / 0.0 / 1.5. Row101x is the Iai
                 # shell, not a Helm ordinal, so it keeps its current0.3.
-                helm_part={1001:0.3,1002:0.3,1003:0.3,1011:0.3,1012:0.3,1013:0.3,
-                           1021:0.6,1022:0.6,1023:0.6}
+                helm_part={1001:0.0,1002:0.0,1003:0.0,1011:0.3,1012:0.3,1013:0.3,
+                           1021:1.5,1022:1.5,1023:1.5}
                 part=helm_part.get(key,attack['Part_Modifier'])
                 struct.pack_into('<ff',record,40,attack['Elemental_Modifier'],part)
                 body.extend(record)

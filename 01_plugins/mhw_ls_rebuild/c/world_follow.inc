@@ -323,15 +323,18 @@ static unsigned world_burst(void *a,WFollow *job,const float *point)
     void *collider=(void *)((uptr)shell+0x13a8);
     ((void (*)(void *,void *,void *,u32,u32,u32))(main_base+0x2b7520))(a,shell,collider,1,hit,0);
     put(collider,0x88,shape);
-    /* Helm Breaker rebalance: 8/10/13 MV per hit and 0.3/0.4/0.6 part
-     * modifier for hits1-3, hits4-6 and hit7. The regenerated ARC already has
+    /* Helm Breaker rebalance: 8/10/15 MV per hit and 0.0/0.0/1.5 part
+     * modifier for hits1-3, hits4-6 and hit7 (only the last hit breaks). The regenerated ARC already has
      * the new values; patch only the old source values so a stale deployed ARC
      * agrees too. Owned Helm shells only; byte0x3a (attack type) is untouched. */
     if(job->kind==1){
         unsigned mv=u16(collider,0x38);
-        if(job->tier==1&&mv==10u)*(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_WHITE_MV;
-        else if(job->tier==2&&mv==15u)*(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_YELLOW_MV;
-        else if(job->tier==3&&mv==25u)*(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_RED_MV;
+        if((job->tier==1&&(mv==10u||mv==7u)))
+            *(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_WHITE_MV;
+        else if(job->tier==2&&mv==15u)
+            *(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_YELLOW_MV;
+        else if(job->tier==3&&(mv==25u||mv==13u))
+            *(uint16_t *)((uptr)collider+0x38)=(uint16_t)W_HELM_RED_MV;
         /* job->emitted is the Helm hit ordinal0..6, including fallback shells. */
         set_real(collider,0x98,job->emitted<3?W_HELM_PART_EARLY:
             (job->emitted<6?W_HELM_PART_MID:W_HELM_PART_LAST));
