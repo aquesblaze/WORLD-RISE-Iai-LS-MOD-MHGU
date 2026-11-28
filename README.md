@@ -50,6 +50,7 @@ Do not stack this mod with another Long Sword Mod or duplicate plugin build.
 - `ZR + B` — Special Sheathe
 - `ZR + X` — Spirit Thrust
 - After Special Sheathe: `X` — Small Iai Slash, `ZR` — Big Iai Slash
+- After a successful Iai Spirit Slash counter: `ZR + B` — Special Sheathe, `ZR + A` — Foresight Slash, `ZR + X` — Spirit Thrust, or `ZR` → `ZR` — Valor Spirit Blade III → Reckoning Slash
 - After a successful Spirit Thrust hit — Spirit Helm Breaker
 
 ## Credits
